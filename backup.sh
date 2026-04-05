@@ -15,7 +15,8 @@ DATA_DIR="${DATA_DIR:-/vw_data}"      # Vaultwarden 数据目录
 BACKUP_DIR="${BACKUP_DIR:-/backup}"   # 本地临时备份目录
 ZIP_PASSWORD="${ZIP_PASSWORD:-}"      # 压缩包加密密码 (必填)
 APPRISE_URL="${APPRISE_URL:-}"        # Apprise 通知 URL (直接使用命令行工具)
-APPRISE_API_URL="${APPRISE_API_URL:-}"  # Apprise 服务 API 地址 (使用独立 Apprise 服务)
+# 读取 API URL，并使用 %/ 自动移除末尾可能多余的斜杠，包容用户的书写习惯
+APPRISE_API_URL="${APPRISE_API_URL%/}"  # Apprise 服务 API 地址 (使用独立 Apprise 服务)
 RCLONE_REMOTE="${RCLONE_REMOTE:-}"    # Rclone 远程路径，例如 myremote:/vaultwarden_backup
 
 # 时间戳，用于生成唯一的文件名
@@ -51,10 +52,14 @@ send_notification() {
         if [ -n "$APPRISE_URL" ]; then
             # 解决 JSON 换行符报错问题：将实际换行符替换为文本 "\n"
             local safe_body="${body//$'\n'/\\n}"
+            # 【新增优化】防止标题或内容中包含双引号导致 JSON 结构破坏
+            safe_body="${safe_body//\"/\\\"}"
+            local safe_title="${title//\"/\\\"}"
+            
             # 使用 -s 隐藏 curl 的进度条
             curl -s -X POST "$APPRISE_API_URL/notify" \
                  -H "Content-Type: application/json" \
-                 -d "{\"title\": \"$title\", \"body\": \"$safe_body\", \"urls\": \"$APPRISE_URL\"}"
+                 -d "{\"title\": \"$safe_title\", \"body\": \"$safe_body\", \"urls\": \"$APPRISE_URL\"}"
                 
         # 玩法 2：用户在 API 地址里直接写了配置路径 (如 `http://apprise:8000/notify/mybot)`  (Stateful 模式)
         else
