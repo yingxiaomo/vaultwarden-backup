@@ -46,13 +46,28 @@ send_notification() {
     # 优先使用独立的 Apprise 服务 API
     if [ -n "$APPRISE_API_URL" ]; then
         echo "使用独立 Apprise 服务发送通知..."
-        # 使用 curl 调用 Apprise API
-        curl -X POST "$APPRISE_API_URL/notify" \
-             -H "Content-Type: application/json" \
-             -d "{\"title\": \"$title\", \"body\": \"$body\", \"urls\": \"$APPRISE_URL\"}"
+        
+        # 玩法 1：如果用户同时配置了 API 地址和具体的通知 URL (Stateless 模式)
+        if [ -n "$APPRISE_URL" ]; then
+            # 解决 JSON 换行符报错问题：将实际换行符替换为文本 "\n"
+            local safe_body="${body//$'\n'/\\n}"
+            # 使用 -s 隐藏 curl 的进度条
+            curl -s -X POST "$APPRISE_API_URL/notify" \
+                 -H "Content-Type: application/json" \
+                 -d "{\"title\": \"$title\", \"body\": \"$safe_body\", \"urls\": \"$APPRISE_URL\"}"
+                
+        # 玩法 2：用户在 API 地址里直接写了配置路径 (如 `http://apprise:8000/notify/mybot)`  (Stateful 模式)
+        else
+            # 使用 form 表单格式提交，原生兼容换行符，且不需要传入 urls
+            curl -s -X POST "$APPRISE_API_URL" \
+                 -d "title=$title" \
+                 -d "body=$body"
+        fi
+        echo "" # 补一个换行避免日志粘连
+        
+    # 回退使用本地 Apprise 命令行工具
     elif [ -n "$APPRISE_URL" ]; then
         echo "使用本地 Apprise 命令行工具发送通知..."
-        # 调用 apprise 命令行工具发送通知
         apprise -t "$title" -b "$body" "$APPRISE_URL"
     else
         echo "未配置 APPRISE_URL 或 APPRISE_API_URL，跳过通知发送。"
