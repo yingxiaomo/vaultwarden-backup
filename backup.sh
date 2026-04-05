@@ -25,6 +25,12 @@ BACKUP_NAME="${PREFIX}_${TIMESTAMP}" # 备份文件基础名称
 SQL_FILE="${BACKUP_DIR}/${BACKUP_NAME}.sql"   # 导出的 SQL 文件路径
 ZIP_FILE="${BACKUP_DIR}/${BACKUP_NAME}.zip"   # 最终的加密压缩包路径
 
+# 无论脚本如何退出，都尝试删除临时 SQL 文件
+cleanup() {
+  rm -f "$SQL_FILE"
+}
+trap cleanup EXIT
+
 # 发送通知的辅助函数
 send_notification() {
     local title="$1"  # 通知标题
@@ -132,8 +138,20 @@ else
     fi
 fi
 
+# 获取压缩包大小
+FILE_SIZE=$(du -h "$ZIP_FILE" | cut -f1)
+
 # 3. Rclone 上传逻辑 (如果配置了)
 if [ -n "$RCLONE_REMOTE" ]; then
+    # 测试 Rclone 远程连接
+    echo "正在测试 Rclone 远程连接..."
+    if ! rclone --config /config/rclone/rclone.conf listremotes | grep -q "^${RCLONE_REMOTE%%:*}:"; then
+        echo "❌ 警告: 找不到 Rclone 配置的远程端: ${RCLONE_REMOTE%%:*}"
+        send_notification "Vaultwarden 备份警告 ⚠️" "找不到 Rclone 配置的远程端: ${RCLONE_REMOTE%%:*}，将尝试继续上传。"
+    else
+        echo "✅ Rclone 远程连接测试通过。"
+    fi
+    
     echo "正在使用 Rclone 上传备份到 $RCLONE_REMOTE..."
     # 使用 rclone copy 上传文件
     rclone copy "$ZIP_FILE" "$RCLONE_REMOTE"
@@ -170,6 +188,6 @@ echo "已清理 $KEEP_DAYS 天前的旧本地备份。"
 
 # 6. 发送成功通知
 echo "备份任务完成！"
-send_notification "Vaultwarden 备份成功 ✅" "备份文件 $BACKUP_NAME.zip 已成功生成并处理。"
+send_notification "Vaultwarden 备份成功 ✅" "类型: $DB_TYPE \n大小: $FILE_SIZE \n文件: $BACKUP_NAME.zip"
 
 exit 0
