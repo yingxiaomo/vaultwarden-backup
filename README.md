@@ -8,7 +8,7 @@
 ## ✨ 核心特性 (Features)
 
 - **多数据库支持**：完美兼容 SQLite (默认)、MySQL/MariaDB 和 PostgreSQL。
-- **AES 加密打包**：使用强密码对备份文件进行 AES 加密压缩，保障数据安全。
+- **灵活的打包选项**：支持 AES 加密打包（需设置密码）和非加密打包，满足不同安全需求。
 - **Rclone 云端同步**：无缝集成 Rclone，支持将备份自动上传至 OneDrive、Google Drive、阿里云盘、WebDAV 等数十种云存储。
 - **Apprise 消息通知**：支持 Telegram、钉钉、企业微信、Server酱、Discord、Email 等几乎所有主流通知平台，备份成功或失败实时掌握。
 - **灵活的定时任务**：基于 Cron 表达式，可自定义备份频率。
@@ -36,7 +36,8 @@ services:
     restart: on-failure
     environment:
       - DB_TYPE=sqlite
-      - ZIP_PASSWORD=your_secure_zip_password
+      # 压缩包 AES 加密密码 (可选，如果不设置则进行非加密打包)
+      # - ZIP_PASSWORD=your_secure_zip_password
       - CRON_SCHEDULE=0 2 * * *
       - RUN_ON_STARTUP=true
       - LOCAL_BACKUP_KEEP_DAYS=15
@@ -62,7 +63,7 @@ docker-compose up -d
 | 环境变量 | 说明 | 默认值 | 必填 |
 | :--- | :--- | :--- | :--- |
 | `DB_TYPE` | 数据库类型 (`sqlite`, `mysql`, `postgres`) | `sqlite` | 否 |
-| `ZIP_PASSWORD` | 压缩包 AES 加密密码 | 无 | **是** |
+| `ZIP_PASSWORD` | 压缩包 AES 加密密码 (可选，如果不设置则进行非加密打包) | 无 | 否 |
 | `CRON_SCHEDULE` | 定时备份的 Cron 表达式 | `0 2 * * *` (每天凌晨2点) | 否 |
 | `RUN_ON_STARTUP` | 容器启动时是否立即执行一次备份 (`true`/`false`) | `true` | 否 |
 | `LOCAL_BACKUP_KEEP_DAYS` | 本地备份保留天数 | `15` | 否 |
