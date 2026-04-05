@@ -8,8 +8,8 @@ echo "Vaultwarden Backup Container Started"
 echo "Cron Schedule: $CRON_SCHEDULE"
 echo "=================================================="
 
-# 将当前所有环境变量导出到一个文件中
-printenv | grep -v "no_proxy" > /app/env.sh
+# 将当前所有环境变量带引号安全导出，防止包含空格的变量解析错误
+export -p | grep -v "no_proxy" > /app/env.sh
 
 # 在 crontab 里先 source 环境变量，再执行备份脚本
 echo "$CRON_SCHEDULE . /app/env.sh && /app/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2" | crontab -
