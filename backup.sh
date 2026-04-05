@@ -202,7 +202,8 @@ if [ -n "$RCLONE_REMOTE" ]; then
         echo "未设置 RCLONE_KEEP_DAYS，跳过远端清理。"
     else
         echo "正在清理远端过期备份（保留 $RCLONE_KEEP_DAYS 天）..."
-        rclone --config /config/rclone/rclone.conf delete "$RCLONE_REMOTE" --min-age "${RCLONE_KEEP_DAYS}d" --rmdirs
+        # 加入 --include 过滤，绝对防止误删用户网盘里的其他私人文件！
+        rclone --config /config/rclone/rclone.conf delete "$RCLONE_REMOTE" --include "${PREFIX}_*.zip" --min-age "${RCLONE_KEEP_DAYS}d" --rmdirs
     fi
 else
     echo "未配置 RCLONE_REMOTE，跳过云端上传，备份仅保留在本地。"
