@@ -41,8 +41,8 @@ jobs:
             type=raw,value=latest
             # 自动打上日期版本标签，格式如: 20240520
             type=raw,value={{date 'YYYYMMDD'}}
-            # 也可以使用 git commit sha 作为 tag
-            # type=sha
+            # 使用 git commit sha 作为 tag
+            type=sha,format=short
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5

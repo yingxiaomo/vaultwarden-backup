@@ -7,7 +7,12 @@ echo "=================================================="
 echo "Vaultwarden Backup Container Started"
 echo "Cron Schedule: $CRON_SCHEDULE"
 echo "=================================================="
-echo "$CRON_SCHEDULE /app/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2" | crontab -
+
+# 将当前所有环境变量导出到一个文件中
+printenv | grep -v "no_proxy" > /app/env.sh
+
+# 在 crontab 里先 source 环境变量，再执行备份脚本
+echo "$CRON_SCHEDULE . /app/env.sh && /app/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2" | crontab -
 
 # 启动即备份开关
 if [ "${RUN_ON_STARTUP:-true}" = "true" ]; then

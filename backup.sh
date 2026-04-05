@@ -104,7 +104,8 @@ case "$DB_TYPE" in
         # MySQL/MariaDB 备份逻辑: 使用 mysqldump 导出
         # 需要环境变量: DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
         # 添加 --single-transaction 防止锁表，不影响 Vaultwarden 写入
-        mysqldump --single-transaction -h "${DB_HOST:-db}" -P "${DB_PORT:-3306}" -u "${DB_USER}" -p"${DB_PASSWORD}" "${DB_NAME}" > "$SQL_FILE"
+        export MYSQL_PWD="${DB_PASSWORD}" # 注入环境变量，避免日志报警
+        mysqldump --single-transaction -h "${DB_HOST:-db}" -P "${DB_PORT:-3306}" -u "${DB_USER}" "${DB_NAME}" > "$SQL_FILE"
         ;; 
     postgres)
         # PostgreSQL 备份逻辑: 使用 pg_dump 导出
