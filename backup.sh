@@ -58,10 +58,10 @@ send_notification() {
                 
         # 玩法 2：用户在 API 地址里直接写了配置路径 (如 `http://apprise:8000/notify/mybot)`  (Stateful 模式)
         else
-            # 使用 form 表单格式提交，原生兼容换行符，且不需要传入 urls
+            # 使用 --data-urlencode 提交，完美保留换行符并防止特殊字符截断表单
             curl -s -X POST "$APPRISE_API_URL" \
-                 -d "title=$title" \
-                 -d "body=$body"
+                 --data-urlencode "title=$title" \
+                 --data-urlencode "body=$body"
         fi
         echo "" # 补一个换行避免日志粘连
         
@@ -203,7 +203,7 @@ if [ -n "$RCLONE_REMOTE" ]; then
     else
         echo "正在清理远端过期备份（保留 $RCLONE_KEEP_DAYS 天）..."
         # 加入 --include 过滤，绝对防止误删用户网盘里的其他私人文件！
-        rclone --config /config/rclone/rclone.conf delete "$RCLONE_REMOTE" --include "${PREFIX}_*.zip" --min-age "${RCLONE_KEEP_DAYS}d" --rmdirs
+        rclone --config /config/rclone/rclone.conf delete "$RCLONE_REMOTE" --include "${PREFIX}_*.zip" --min-age "${RCLONE_KEEP_DAYS}d"
     fi
 else
     echo "未配置 RCLONE_REMOTE，跳过云端上传，备份仅保留在本地。"
