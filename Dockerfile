@@ -25,14 +25,15 @@ RUN apk update && apk add --no-cache \
 # 创建备份脚本存放目录和数据挂载点
 RUN mkdir -p /app /vw_data /backup /config/rclone
 
-# 将本地的 backup.sh 脚本复制到容器内的 /app 目录
+# 将本地的脚本复制到容器内的 /app 目录
 COPY backup.sh /app/backup.sh
+COPY entrypoint.sh /app/entrypoint.sh
 
 # 赋予脚本可执行权限
-RUN chmod +x /app/backup.sh
+RUN chmod +x /app/backup.sh /app/entrypoint.sh
 
 # 设置工作目录
 WORKDIR /app
 
-# 默认执行命令，可以配合 cron 或直接运行脚本
-CMD ["/app/backup.sh"]
+# 默认执行命令，启动 entrypoint 脚本运行 crond
+CMD ["/app/entrypoint.sh"]
