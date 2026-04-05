@@ -51,11 +51,12 @@ services:
       # - BACKUP_PREFIX=vaultwarden_backup
       # - RCLONE_REMOTE=my_onedrive:/vaultwarden_backup
       # - APPRISE_URL=tgram://bottoken/ChatID
+      # 时区配置 (默认 Asia/Shanghai)
+      - TZ=Asia/Shanghai
     volumes:
       - /path/to/your/vw_data:/vw_data:ro
       - ./backups:/backup
       # - ./rclone_config:/config/rclone/
-      - /etc/localtime:/etc/localtime:ro
 ```
 
 ### 3. 启动服务
@@ -89,6 +90,7 @@ docker-compose up -d
 | `HTTP_PROXY` | HTTP 代理地址 | 无 | 否 |
 | `HTTPS_PROXY` | HTTPS 代理地址 | 无 | 否 |
 | `ALL_PROXY` | SOCKS5 代理地址 | 无 | 否 |
+| `TZ` | 时区设置 | `Asia/Shanghai` | 否 |
 
 ## 📢 Apprise 通知配置示例
 

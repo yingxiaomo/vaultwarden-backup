@@ -25,9 +25,15 @@ BACKUP_NAME="${PREFIX}_${TIMESTAMP}" # 备份文件基础名称
 SQL_FILE="${BACKUP_DIR}/${BACKUP_NAME}.sql"   # 导出的 SQL 文件路径
 ZIP_FILE="${BACKUP_DIR}/${BACKUP_NAME}.zip"   # 最终的加密压缩包路径
 
-# 无论脚本如何退出，都尝试删除临时 SQL 文件
+# 脚本执行成功标志
+SUCCESS=0
+# 无论脚本如何退出，都尝试删除临时文件
 cleanup() {
   rm -f "$SQL_FILE"
+  # 如果不是正常结束（SUCCESS不为1），说明中途出错了，清理掉损坏的压缩包
+  if [ "$SUCCESS" -ne 1 ] && [ -f "$ZIP_FILE" ]; then
+      rm -f "$ZIP_FILE"
+  fi
 }
 trap cleanup EXIT
 
@@ -188,6 +194,9 @@ echo "已清理 $KEEP_DAYS 天前的旧本地备份。"
 
 # 6. 发送成功通知
 echo "备份任务完成！"
-send_notification "Vaultwarden 备份成功 ✅" "类型: $DB_TYPE \n大小: $FILE_SIZE \n文件: $BACKUP_NAME.zip"
+SUCCESS=1
+send_notification "Vaultwarden 备份成功 ✅" "类型: $DB_TYPE
+大小: $FILE_SIZE
+文件: $BACKUP_NAME.zip"
 
 exit 0
