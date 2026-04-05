@@ -89,6 +89,20 @@ fi
 # 确保备份目录存在
 mkdir -p "$BACKUP_DIR"
 
+# 检查备份目录权限
+if [ ! -w "$BACKUP_DIR" ]; then
+    echo "错误: 备份目录 $BACKUP_DIR 没有写入权限！"
+    send_notification "Vaultwarden 备份失败 ❌" "备份目录没有写入权限，请检查权限设置。"
+    exit 1
+fi
+
+# 检查磁盘空间
+FREE_SPACE=$(df -h "$BACKUP_DIR" | tail -n 1 | awk '{print $4}' | sed 's/G//')
+if [ "$FREE_SPACE" -lt 5 ]; then
+    echo "警告: 备份目录所在磁盘空间不足，剩余空间小于 5GB！"
+    send_notification "Vaultwarden 备份警告 ⚠️" "备份目录所在磁盘空间不足，剩余空间小于 5GB，可能导致备份失败。"
+fi
+
 echo "开始执行 Vaultwarden 备份任务..."
 
 # 1. 数据库备份逻辑
@@ -137,19 +151,36 @@ fi
 echo "正在打包数据目录和数据库文件..."
 # 切换到数据目录以避免打包绝对路径
 cd "$DATA_DIR" || exit 1
+
+# 检查 SQL 文件是否存在
+if [ ! -f "$SQL_FILE" ]; then
+    echo "错误: 数据库备份文件 $SQL_FILE 不存在！"
+    send_notification "Vaultwarden 备份失败 ❌" "数据库备份文件不存在，可能是数据库导出失败。"
+    exit 1
+fi
+
 # 根据是否设置了密码决定是否加密打包
 if [ -z "$ZIP_PASSWORD" ]; then
-    # 非加密打包
-    zip -r -q "$ZIP_FILE" . "$SQL_FILE"
+    # 非加密打包，添加 -m 参数减少内存使用
+    echo "使用非加密方式打包..."
+    zip -r -m -q "$ZIP_FILE" . "$SQL_FILE"
 else
-    # 加密打包
-    zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . "$SQL_FILE"
+    # 加密打包，添加 -m 参数减少内存使用
+    echo "使用加密方式打包..."
+    zip -r -m -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . "$SQL_FILE"
 fi
 
 # 检查打包是否成功
 if [ $? -ne 0 ]; then
     echo "错误: 打包失败！"
-    send_notification "Vaultwarden 备份失败 ❌" "使用 zip 打包过程中发生错误。"
+    send_notification "Vaultwarden 备份失败 ❌" "使用 zip 打包过程中发生错误，请检查磁盘空间和权限。"
+    exit 1
+fi
+
+# 检查压缩包是否存在
+if [ ! -f "$ZIP_FILE" ]; then
+    echo "错误: 压缩包文件 $ZIP_FILE 不存在！"
+    send_notification "Vaultwarden 备份失败 ❌" "压缩包文件不存在，可能是打包过程中发生错误。"
     exit 1
 fi
 
@@ -160,20 +191,20 @@ ZIP_DONE=1
 echo "正在校验压缩包完整性..."
 if [ -z "$ZIP_PASSWORD" ]; then
     # 非加密打包的校验
-    if zip -T "$ZIP_FILE" > /dev/null; then
+    if zip -T "$ZIP_FILE" 2>&1; then
         echo "✅ 压缩包完整性校验通过。"
     else
         echo "❌ 压缩包损坏！"
-        send_notification "Vaultwarden 备份失败 ❌" "生成的压缩包校验失败，请检查磁盘空间。"
+        send_notification "Vaultwarden 备份失败 ❌" "生成的压缩包校验失败，请检查磁盘空间和权限。"
         exit 1
     fi
 else
     # 加密打包的校验
-    if zip -T -P "$ZIP_PASSWORD" "$ZIP_FILE" > /dev/null; then
+    if zip -T -P "$ZIP_PASSWORD" "$ZIP_FILE" 2>&1; then
         echo "✅ 压缩包完整性校验通过。"
     else
         echo "❌ 压缩包损坏！"
-        send_notification "Vaultwarden 备份失败 ❌" "生成的压缩包校验失败，请检查磁盘空间。"
+        send_notification "Vaultwarden 备份失败 ❌" "生成的压缩包校验失败，请检查磁盘空间和权限。"
         exit 1
     fi
 fi
