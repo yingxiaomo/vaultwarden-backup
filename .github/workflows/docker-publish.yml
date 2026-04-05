@@ -1,0 +1,70 @@
+name: Docker Build and Publish
+
+# 触发条件：当代码推送到 main 分支时触发
+on:
+  push:
+    branches:
+      - main
+    # 也可以监听特定路径的变更，例如只在 Dockerfile 或脚本修改时触发
+    # paths:
+    #   - 'Dockerfile'
+    #   - 'backup.sh'
+
+# 环境变量配置
+env:
+  # Docker Hub 镜像仓库名称，例如 yourusername/vaultwarden-backup
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/vaultwarden-backup
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 检出代码仓库
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. 设置 QEMU，用于支持多平台构建 (如 arm64)
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # 3. 设置 Docker Buildx，强大的构建工具
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 4. 登录到 Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          # 使用 GitHub Secrets 管理凭证，确保安全
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 5. 提取 Docker 镜像的元数据 (Tags, Labels)
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            # 自动打上 latest 标签
+            type=raw,value=latest
+            # 自动打上日期版本标签，格式如: 20240520
+            type=raw,value={{date 'YYYYMMDD'}}
+            # 也可以使用 git commit sha 作为 tag
+            # type=sha
+
+      # 6. 构建并推送多平台镜像
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          # 启用推送到镜像仓库
+          push: true
+          # 构建多平台镜像，支持 amd64 和 arm64 架构
+          platforms: linux/amd64,linux/arm64
+          # 使用上一步提取的 tags 和 labels
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # 使用 GitHub Actions 缓存加速构建
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

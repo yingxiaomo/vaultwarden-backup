@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  vaultwarden-backup:
+    # 使用你构建并推送到 Docker Hub 的镜像
+    image: yourusername/vaultwarden-backup:latest
+    container_name: vaultwarden_backup
+    # 容器重启策略：失败时重启
+    restart: on-failure
+    environment:
+      # ---------------------------------------------------------
+      # 数据库配置 (根据实际使用的数据库取消注释并修改)
+      # ---------------------------------------------------------
+      # 数据库类型: sqlite (默认), mysql, postgres
+      - DB_TYPE=sqlite
+      
+      # 如果使用 MySQL 或 PostgreSQL，请配置以下连接信息:
+      # - DB_HOST=db
+      # - DB_PORT=5432
+      # - DB_USER=vaultwarden
+      # - DB_PASSWORD=your_db_password
+      # - DB_NAME=vaultwarden
+
+      # ---------------------------------------------------------
+      # 备份与加密配置
+      # ---------------------------------------------------------
+      # 压缩包 AES 加密密码 (必填，请务必设置强密码)
+      - ZIP_PASSWORD=your_secure_zip_password
+      
+      # ---------------------------------------------------------
+      # Rclone 云端同步配置
+      # ---------------------------------------------------------
+      # Rclone 远程路径，格式为 "配置名称:路径" (需先配置好 rclone.conf)
+      - RCLONE_REMOTE=my_onedrive:/vaultwarden_backup
+      
+      # ---------------------------------------------------------
+      # Apprise 通知配置
+      # ---------------------------------------------------------
+      # Apprise 通知 URL (必填)
+      # 示例:
+      # Telegram: tgram://BOT_TOKEN/CHAT_ID
+      # Discord: discord://WEBHOOK_ID/WEBHOOK_TOKEN
+      # Email: mailto://user:pass@domain.com
+      - APPRISE_URL=tgram://123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ/987654321
+      
+      # ---------------------------------------------------------
+      # 网络代理配置 (可选，用于解决国内网络访问 Apprise/Rclone 失败的问题)
+      # ---------------------------------------------------------
+      # - HTTP_PROXY=http://192.168.1.100:7890
+      # - HTTPS_PROXY=http://192.168.1.100:7890
+
+    volumes:
+      # 挂载 Vaultwarden 的数据目录 (只读挂载，保证数据安全)
+      - /path/to/your/vw_data:/vw_data:ro
+      
+      # 挂载本地备份目录，用于存放生成的加密压缩包
+      - ./backups:/backup
+      
+      # 【重要提醒】挂载 Rclone 配置文件目录
+      # 强烈建议挂载整个目录 `./:/config/rclone/` 而不是单个文件 `rclone.conf`。
+      # 因为某些网盘 (如 OneDrive, Google Drive) 的 Token 会定期刷新，
+      # Rclone 需要重写配置文件。如果只挂载单文件，可能会导致 Token 刷新冲突或失败。
+      - ./rclone_config:/config/rclone/
+      
+      # 同步宿主机时间
+      - /etc/localtime:/etc/localtime:ro
+
+    # 如果使用外部数据库容器，确保备份容器在数据库启动后运行
+    # depends_on:
+    #   - db
