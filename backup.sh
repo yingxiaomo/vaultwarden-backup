@@ -247,21 +247,21 @@ ZIP_DONE=1
 # 检查压缩包完整性
 echo "正在校验压缩包完整性..."
 if [ -z "$ZIP_PASSWORD" ]; then
-    # 非加密打包的校验
-    if zip -T "$ZIP_FILE" 2>&1; then
+    # 非加密打包的校验：使用 unzip -tq 静默测试
+    if unzip -tq "$ZIP_FILE" > /dev/null 2>&1; then
         echo "✅ 压缩包完整性校验通过。"
     else
         echo "❌ 压缩包损坏！"
-        send_notification "Vaultwarden 备份失败 ❌" "生成的压缩包校验失败，请检查磁盘空间和权限。"
+        send_notification "Vaultwarden 备份失败 ❌" "生成的压缩包校验失败，请检查磁盘空间。"
         exit 1
     fi
 else
-    # 加密打包的校验
-    if zip -T -P "$ZIP_PASSWORD" "$ZIP_FILE" 2>&1; then
+    # 加密打包的校验：显式传入 -P 密码进行测试
+    if unzip -tq -P "$ZIP_PASSWORD" "$ZIP_FILE" > /dev/null 2>&1; then
         echo "✅ 压缩包完整性校验通过。"
     else
         echo "❌ 压缩包损坏！"
-        send_notification "Vaultwarden 备份失败 ❌" "生成的压缩包校验失败，请检查磁盘空间和权限。"
+        send_notification "Vaultwarden 备份失败 ❌" "生成的压缩包密码校验失败，请检查。"
         exit 1
     fi
 fi

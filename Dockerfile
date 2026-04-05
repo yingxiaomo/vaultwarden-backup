@@ -11,6 +11,7 @@ RUN apk add --no-cache \
     sqlite \
     rclone \
     zip \
+    unzip \
     python3 \
     py3-pip \
     bash \
