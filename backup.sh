@@ -107,12 +107,27 @@ echo "开始执行 Vaultwarden 备份任务..."
 
 # 1. 数据库备份逻辑
 echo "正在备份数据库 (类型: $DB_TYPE)..."
+
+# 检查数据库备份工具是否存在
 case "$DB_TYPE" in
     sqlite)
+        # 检查 sqlite3 命令是否存在
+        if ! command -v sqlite3 > /dev/null 2>&1; then
+            echo "错误: 找不到 sqlite3 命令，请确保已安装 SQLite 工具。"
+            send_notification "Vaultwarden 备份失败 ❌" "找不到 sqlite3 命令，请确保已安装 SQLite 工具。"
+            exit 1
+        fi
         # SQLite 备份逻辑: 使用 .backup 命令安全导出
         SQLITE_DB="${DATA_DIR}/db.sqlite3" # 默认 SQLite 数据库路径
         if [ -f "$SQLITE_DB" ]; then
-            sqlite3 "$SQLITE_DB" ".backup '$SQL_FILE'"
+            echo "正在使用 SQLite .backup 命令备份数据库..."
+            if sqlite3 "$SQLITE_DB" ".backup '$SQL_FILE'"; then
+                echo "✅ SQLite 数据库备份成功。"
+            else
+                echo "错误: SQLite 数据库备份失败！"
+                send_notification "Vaultwarden 备份失败 ❌" "SQLite 数据库备份失败，请检查数据库文件权限。"
+                exit 1
+            fi
         else
             echo "错误: 找不到 SQLite 数据库文件 $SQLITE_DB"
             send_notification "Vaultwarden 备份失败 ❌" "找不到 SQLite 数据库文件。"
@@ -120,19 +135,55 @@ case "$DB_TYPE" in
         fi
         ;;
     mysql)
+        # 检查 mysqldump 命令是否存在
+        if ! command -v mysqldump > /dev/null 2>&1; then
+            echo "错误: 找不到 mysqldump 命令，请确保已安装 MySQL 客户端工具。"
+            send_notification "Vaultwarden 备份失败 ❌" "找不到 mysqldump 命令，请确保已安装 MySQL 客户端工具。"
+            exit 1
+        fi
+        # 检查必要的环境变量
+        if [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ] || [ -z "$DB_NAME" ]; then
+            echo "错误: MySQL 备份需要设置 DB_USER, DB_PASSWORD 和 DB_NAME 环境变量。"
+            send_notification "Vaultwarden 备份失败 ❌" "MySQL 备份需要设置 DB_USER, DB_PASSWORD 和 DB_NAME 环境变量。"
+            exit 1
+        fi
         # MySQL/MariaDB 备份逻辑: 使用 mysqldump 导出
-        # 需要环境变量: DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
         # 添加 --single-transaction 防止锁表，不影响 Vaultwarden 写入
         export MYSQL_PWD="${DB_PASSWORD}" # 注入环境变量，避免日志报警
-        mysqldump --single-transaction -h "${DB_HOST:-db}" -P "${DB_PORT:-3306}" -u "${DB_USER}" "${DB_NAME}" > "$SQL_FILE"
-        ;; 
+        echo "正在使用 mysqldump 备份 MySQL 数据库..."
+        if mysqldump --single-transaction --quick --opt -h "${DB_HOST:-db}" -P "${DB_PORT:-3306}" -u "${DB_USER}" "${DB_NAME}" > "$SQL_FILE"; then
+            echo "✅ MySQL 数据库备份成功。"
+        else
+            echo "错误: MySQL 数据库备份失败！"
+            send_notification "Vaultwarden 备份失败 ❌" "MySQL 数据库备份失败，请检查数据库连接和权限。"
+            exit 1
+        fi
+        ;;
     postgres)
+        # 检查 pg_dump 命令是否存在
+        if ! command -v pg_dump > /dev/null 2>&1; then
+            echo "错误: 找不到 pg_dump 命令，请确保已安装 PostgreSQL 客户端工具。"
+            send_notification "Vaultwarden 备份失败 ❌" "找不到 pg_dump 命令，请确保已安装 PostgreSQL 客户端工具。"
+            exit 1
+        fi
+        # 检查必要的环境变量
+        if [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ] || [ -z "$DB_NAME" ]; then
+            echo "错误: PostgreSQL 备份需要设置 DB_USER, DB_PASSWORD 和 DB_NAME 环境变量。"
+            send_notification "Vaultwarden 备份失败 ❌" "PostgreSQL 备份需要设置 DB_USER, DB_PASSWORD 和 DB_NAME 环境变量。"
+            exit 1
+        fi
         # PostgreSQL 备份逻辑: 使用 pg_dump 导出
-        # 需要环境变量: DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
         # 添加 --no-owner 和 --no-privileges 让备份文件在恢复到不同用户环境时更省心
         export PGPASSWORD="${DB_PASSWORD}" # pg_dump 需要通过环境变量传递密码
-        pg_dump --no-owner --no-privileges -h "${DB_HOST:-db}" -p "${DB_PORT:-5432}" -U "${DB_USER}" -d "${DB_NAME}" -F p > "$SQL_FILE"
-        ;; 
+        echo "正在使用 pg_dump 备份 PostgreSQL 数据库..."
+        if pg_dump --no-owner --no-privileges --clean -h "${DB_HOST:-db}" -p "${DB_PORT:-5432}" -U "${DB_USER}" -d "${DB_NAME}" -F p > "$SQL_FILE"; then
+            echo "✅ PostgreSQL 数据库备份成功。"
+        else
+            echo "错误: PostgreSQL 数据库备份失败！"
+            send_notification "Vaultwarden 备份失败 ❌" "PostgreSQL 数据库备份失败，请检查数据库连接和权限。"
+            exit 1
+        fi
+        ;;
     *)
         echo "错误: 不支持的数据库类型 $DB_TYPE"
         send_notification "Vaultwarden 备份失败 ❌" "不支持的数据库类型: $DB_TYPE"
