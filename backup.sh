@@ -183,9 +183,9 @@ FILE_SIZE=$(du -h "$ZIP_FILE" | cut -f1)
 
 # 3. Rclone 上传逻辑 (如果配置了)
 if [ -n "$RCLONE_REMOTE" ]; then
-    # 测试 Rclone 远程连接
+    # 测试 Rclone 远程连接 (全局变量已生效，无需指定 --config)
     echo "正在测试 Rclone 远程连接..."
-    if ! rclone --config /config/rclone/rclone.conf listremotes | grep -q "^${RCLONE_REMOTE%%:*}:"; then
+    if ! rclone listremotes | grep -q "^${RCLONE_REMOTE%%:*}:"; then
         echo "❌ 警告: 找不到 Rclone 配置的远程端: ${RCLONE_REMOTE%%:*}"
         send_notification "Vaultwarden 备份警告 ⚠️" "找不到 Rclone 配置的远程端: ${RCLONE_REMOTE%%:*}，将尝试继续上传。"
     else
@@ -208,7 +208,7 @@ if [ -n "$RCLONE_REMOTE" ]; then
     else
         echo "正在清理远端过期备份（保留 $RCLONE_KEEP_DAYS 天）..."
         # 加入 --include 过滤，绝对防止误删用户网盘里的其他私人文件！
-        rclone --config /config/rclone/rclone.conf delete "$RCLONE_REMOTE" --include "${PREFIX}_*.zip" --min-age "${RCLONE_KEEP_DAYS}d"
+        rclone delete "$RCLONE_REMOTE" --include "${PREFIX}_*.zip" --min-age "${RCLONE_KEEP_DAYS}d"
     fi
 else
     echo "未配置 RCLONE_REMOTE，跳过云端上传，备份仅保留在本地。"

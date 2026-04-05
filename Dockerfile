@@ -1,8 +1,12 @@
 
 FROM postgres:16-alpine
 
-ENV TZ=Asia/Shanghai
-RUN apk update && apk add --no-cache \
+# 设置默认时区和 Rclone 全局配置文件路径
+ENV TZ=Asia/Shanghai \
+    RCLONE_CONFIG=/config/rclone/rclone.conf
+
+# 直接使用 --no-cache 安装，无需冗余的 apk update
+RUN apk add --no-cache \
     mariadb-client \
     sqlite \
     rclone \

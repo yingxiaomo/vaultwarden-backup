@@ -1,9 +1,9 @@
 # Vaultwarden Backup
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/yingxiaomo/vaultwarden-backup.svg)](https://hub.docker.com/r/yingxiaomo/vaultwarden-backup)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[!\[Docker Pulls\](https://img.shields.io/docker/pulls/yingxiaomo/vaultwarden-backup.svg null)](https://hub.docker.com/r/yingxiaomo/vaultwarden-backup)
+[!\[License: MIT\](https://img.shields.io/badge/License-MIT-yellow.svg null)](https://opensource.org/licenses/MIT)
 
-一个强大且易用的 Vaultwarden 备份解决方案，支持 SQLite、MySQL 和 PostgreSQL 数据库，并集成了 Apprise 消息通知和 Rclone 云端同步功能。
+市面上已经有很多现成的备份项目了，但是他们都是大而全，搞的太复杂了，我需要的只是一个简单的 Vaultwarden 备份解决方案，于是就有了这个东西，它支持 SQLite、MySQL 和 PostgreSQL 数据库，并集成了 Apprise 消息通知和 Rclone 云端同步功能。
 
 ## ✨ 核心特性 (Features)
 
@@ -72,29 +72,29 @@ docker-compose up -d
 
 ## ⚙️ 环境变量说明 (Environment Variables)
 
-| 环境变量 | 说明 | 默认值 | 必填 |
-| :--- | :--- | :--- | :--- |
-| `DB_TYPE` | 数据库类型 (`sqlite`, `mysql`, `postgres`) | `sqlite` | 否 |
-| `ZIP_PASSWORD` | 压缩包 AES 加密密码 (可选，如果不设置则进行非加密打包) | 无 | 否 |
-| `CRON_SCHEDULE` | 定时备份的 Cron 表达式 | `0 2 * * *` (每天凌晨2点) | 否 |
-| `RUN_ON_STARTUP` | 容器启动时是否立即执行一次备份 (`true`/`false`) | `true` | 否 |
-| `LOCAL_BACKUP_KEEP_DAYS` | 本地备份保留天数 | `15` | 否 |
-| `RCLONE_KEEP_DAYS` | 远端备份保留天数 (可选，如果不设置则不清理) | 无 | 否 |
-| `BACKUP_PREFIX` | 备份文件前缀 | `vaultwarden_backup` | 否 |
-| `APPRISE_URL` | Apprise 通知 URL (直接使用命令行工具) | 无 | 否 |
-| `APPRISE_API_URL` | Apprise 服务 API 地址 (使用独立 Apprise 服务) | 无 | 否 |
-| `RCLONE_REMOTE` | Rclone 远程路径 (例如 `myremote:/backup`) | 无 | 否 |
-| `DATA_DIR` | Vaultwarden 数据目录路径 | `/vw_data` | 否 |
-| `BACKUP_DIR` | 本地临时备份目录路径 | `/backup` | 否 |
-| `DB_HOST` | 数据库主机地址 (MySQL/PostgreSQL) | `db` | 否 |
-| `DB_PORT` | 数据库端口 (MySQL: `3306`, PostgreSQL: `5432`) | 对应默认端口 | 否 |
-| `DB_USER` | 数据库用户名 (MySQL/PostgreSQL) | 无 | 否 |
-| `DB_PASSWORD` | 数据库密码 (MySQL/PostgreSQL) | 无 | 否 |
-| `DB_NAME` | 数据库名称 (MySQL/PostgreSQL) | 无 | 否 |
-| `HTTP_PROXY` | HTTP 代理地址 | 无 | 否 |
-| `HTTPS_PROXY` | HTTPS 代理地址 | 无 | 否 |
-| `ALL_PROXY` | SOCKS5 代理地址 | 无 | 否 |
-| `TZ` | 时区设置 | `Asia/Shanghai` | 否 |
+| 环境变量                     | 说明                                        | 默认值                  | 必填 |
+| :----------------------- | :---------------------------------------- | :------------------- | :- |
+| `DB_TYPE`                | 数据库类型 (`sqlite`, `mysql`, `postgres`)     | `sqlite`             | 否  |
+| `ZIP_PASSWORD`           | 压缩包 AES 加密密码 (可选，如果不设置则进行非加密打包)           | 无                    | 否  |
+| `CRON_SCHEDULE`          | 定时备份的 Cron 表达式                            | `0 2 * * *` (每天凌晨2点) | 否  |
+| `RUN_ON_STARTUP`         | 容器启动时是否立即执行一次备份 (`true`/`false`)          | `true`               | 否  |
+| `LOCAL_BACKUP_KEEP_DAYS` | 本地备份保留天数                                  | `15`                 | 否  |
+| `RCLONE_KEEP_DAYS`       | 远端备份保留天数 (可选，如果不设置则不清理)                   | 无                    | 否  |
+| `BACKUP_PREFIX`          | 备份文件前缀                                    | `vaultwarden_backup` | 否  |
+| `APPRISE_URL`            | Apprise 通知 URL (直接使用命令行工具)                | 无                    | 否  |
+| `APPRISE_API_URL`        | Apprise 服务 API 地址 (使用独立 Apprise 服务)       | 无                    | 否  |
+| `RCLONE_REMOTE`          | Rclone 远程路径 (例如 `myremote:/backup`)       | 无                    | 否  |
+| `DATA_DIR`               | Vaultwarden 数据目录路径                        | `/vw_data`           | 否  |
+| `BACKUP_DIR`             | 本地临时备份目录路径                                | `/backup`            | 否  |
+| `DB_HOST`                | 数据库主机地址 (MySQL/PostgreSQL)                | `db`                 | 否  |
+| `DB_PORT`                | 数据库端口 (MySQL: `3306`, PostgreSQL: `5432`) | 对应默认端口               | 否  |
+| `DB_USER`                | 数据库用户名 (MySQL/PostgreSQL)                 | 无                    | 否  |
+| `DB_PASSWORD`            | 数据库密码 (MySQL/PostgreSQL)                  | 无                    | 否  |
+| `DB_NAME`                | 数据库名称 (MySQL/PostgreSQL)                  | 无                    | 否  |
+| `HTTP_PROXY`             | HTTP 代理地址                                 | 无                    | 否  |
+| `HTTPS_PROXY`            | HTTPS 代理地址                                | 无                    | 否  |
+| `ALL_PROXY`              | SOCKS5 代理地址                               | 无                    | 否  |
+| `TZ`                     | 时区设置                                      | `Asia/Shanghai`      | 否  |
 
 ## 📢 Apprise 通知配置示例
 
