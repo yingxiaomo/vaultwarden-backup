@@ -7,12 +7,13 @@ echo "=================================================="
 echo "Vaultwarden Backup Container Started"
 echo "Cron Schedule: $CRON_SCHEDULE"
 echo "=================================================="
-
-# 配置 crontab，将输出重定向到容器的标准输出和标准错误，以便在 docker logs 中查看
 echo "$CRON_SCHEDULE /app/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2" | crontab -
 
-# 在前台启动 crond 守护进程
-# -f: 前台运行
-# -l 2: 日志级别 (0-8, 默认 8, 2 表示打印基本信息)
+# 启动即备份开关
+if [ "${RUN_ON_STARTUP:-true}" = "true" ]; then
+    echo "检测到启动即备份开关，正在执行首次备份任务..."
+    /app/backup.sh
+fi
+
 echo "Starting crond daemon..."
 exec crond -f -l 2

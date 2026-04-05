@@ -90,7 +90,7 @@ echo "正在加密打包数据目录和数据库文件..."
 # 使用 zip -P 进行 AES 加密压缩 (-r 递归, -q 静默)
 # 注意: 将数据目录和刚导出的 SQL 文件一起打包
 cd "$DATA_DIR" || exit 1 # 切换到数据目录以避免打包绝对路径
-zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" ./* "$SQL_FILE"
+zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . "$SQL_FILE"
 
 # 检查打包是否成功
 if [ $? -ne 0 ]; then
@@ -120,7 +120,13 @@ rm -f "$SQL_FILE" # 删除未加密的 SQL 文件
 # 如果上传成功，可以选择删除本地 ZIP 包，这里保留以防万一，或者根据策略清理旧备份
 # rm -f "$ZIP_FILE" 
 
-# 5. 发送成功通知
+# 5. 自动清理过期备份
+echo "正在清理过期备份..."
+# 自动清理 15 天前的本地备份文件，防止磁盘塞满
+find "$BACKUP_DIR" -name "vaultwarden_backup_*.zip" -mtime +15 -exec rm {} \;
+echo "已清理 15 天前的旧本地备份。"
+
+# 6. 发送成功通知
 echo "备份任务完成！"
 send_notification "Vaultwarden 备份成功 ✅" "备份文件 $BACKUP_NAME.zip 已成功生成并处理。"
 

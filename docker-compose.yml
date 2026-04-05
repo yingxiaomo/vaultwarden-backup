@@ -85,3 +85,10 @@ services:
     # 如果使用外部数据库容器，确保备份容器在数据库启动后运行
     # depends_on:
     #   - db
+    
+    healthcheck:
+      # 检查 crond 进程是否在运行
+      test: ["CMD", "pgrep", "crond" ]
+      interval: 1m
+      timeout: 10s
+      retries: 3
