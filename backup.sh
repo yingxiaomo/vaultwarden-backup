@@ -35,10 +35,11 @@ send_notification() {
     fi
 }
 
-# 检查必要参数
+# 检查必要参数（ZIP_PASSWORD 现在是可选项）
 if [ -z "$ZIP_PASSWORD" ]; then
-    echo "错误: 未设置 ZIP_PASSWORD 环境变量，无法进行加密打包！"
-    exit 1
+    echo "未设置 ZIP_PASSWORD 环境变量，将进行非加密打包。"
+else
+    echo "已设置 ZIP_PASSWORD 环境变量，将进行加密打包。"
 fi
 
 # 确保备份目录存在
@@ -85,17 +86,23 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 2. 加密打包逻辑
-echo "正在加密打包数据目录和数据库文件..."
-# 使用 zip -P 进行 AES 加密压缩 (-r 递归, -q 静默)
-# 注意: 将数据目录和刚导出的 SQL 文件一起打包
-cd "$DATA_DIR" || exit 1 # 切换到数据目录以避免打包绝对路径
-zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . "$SQL_FILE"
+# 2. 打包逻辑
+echo "正在打包数据目录和数据库文件..."
+# 切换到数据目录以避免打包绝对路径
+cd "$DATA_DIR" || exit 1
+# 根据是否设置了密码决定是否加密打包
+if [ -z "$ZIP_PASSWORD" ]; then
+    # 非加密打包
+    zip -r -q "$ZIP_FILE" . "$SQL_FILE"
+else
+    # 加密打包
+    zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . "$SQL_FILE"
+fi
 
 # 检查打包是否成功
 if [ $? -ne 0 ]; then
-    echo "错误: 加密打包失败！"
-    send_notification "Vaultwarden 备份失败 ❌" "使用 zip 加密打包过程中发生错误。"
+    echo "错误: 打包失败！"
+    send_notification "Vaultwarden 备份失败 ❌" "使用 zip 打包过程中发生错误。"
     exit 1
 fi
 
