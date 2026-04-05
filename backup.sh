@@ -97,10 +97,16 @@ if [ ! -w "$BACKUP_DIR" ]; then
 fi
 
 # 检查磁盘空间
-FREE_SPACE=$(df -h "$BACKUP_DIR" | tail -n 1 | awk '{print $4}' | sed 's/G//')
-if [ "$FREE_SPACE" -lt 5 ]; then
-    echo "警告: 备份目录所在磁盘空间不足，剩余空间小于 5GB！"
-    send_notification "Vaultwarden 备份警告 ⚠️" "备份目录所在磁盘空间不足，剩余空间小于 5GB，可能导致备份失败。"
+# 使用 df -P 以一致的格式输出，然后转换为字节进行比较
+FREE_SPACE_BYTES=$(df -P "$BACKUP_DIR" | tail -n 1 | awk '{print $4}' | awk '{print $1 * 1024}')
+# 5GB 转换为字节
+MIN_SPACE_BYTES=$((5 * 1024 * 1024 * 1024))
+
+if [ "$FREE_SPACE_BYTES" -lt "$MIN_SPACE_BYTES" ]; then
+    # 获取人类可读的剩余空间
+    HUMAN_FREE=$(df -h "$BACKUP_DIR" | tail -n 1 | awk '{print $4}')
+    echo "警告: 备份目录所在磁盘空间不足，剩余空间为 $HUMAN_FREE，小于 5GB！"
+    send_notification "Vaultwarden 备份警告 ⚠️" "备份目录所在磁盘空间不足，剩余空间为 $HUMAN_FREE，小于 5GB，可能导致备份失败。"
 fi
 
 echo "开始执行 Vaultwarden 备份任务..."
@@ -212,13 +218,13 @@ fi
 
 # 根据是否设置了密码决定是否加密打包
 if [ -z "$ZIP_PASSWORD" ]; then
-    # 非加密打包，添加 -m 参数减少内存使用
+    # 非加密打包
     echo "使用非加密方式打包..."
-    zip -r -m -q "$ZIP_FILE" . "$SQL_FILE"
+    zip -r -q "$ZIP_FILE" . "$SQL_FILE"
 else
-    # 加密打包，添加 -m 参数减少内存使用
+    # 加密打包
     echo "使用加密方式打包..."
-    zip -r -m -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . "$SQL_FILE"
+    zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . "$SQL_FILE"
 fi
 
 # 检查打包是否成功
