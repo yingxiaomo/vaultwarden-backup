@@ -1,5 +1,13 @@
 #!/bin/bash
 
+if [ -n "$TZ" ] && [ -f "/usr/share/zoneinfo/$TZ" ]; then
+    echo "Configuring timezone to $TZ..."
+    cp "/usr/share/zoneinfo/$TZ" /etc/localtime
+    echo "$TZ" > /etc/timezone
+else
+    echo "No TZ environment variable set or invalid timezone. Using default."
+fi
+
 # 默认 Cron 表达式，如果未设置则默认每天凌晨 2 点执行
 CRON_SCHEDULE="${CRON_SCHEDULE:-0 2 * * *}"
 
@@ -8,7 +16,7 @@ echo "Vaultwarden Backup Container Started"
 echo "Cron Schedule: $CRON_SCHEDULE"
 echo "=================================================="
 
-# 将当前所有环境变量导出，并兼容 Alpine 的 sh 解析（将 declare -x 替换为 export）
+# 将当前所有环境变量导出，并兼容 Alpine 的 sh 解析
 export -p | grep -v "no_proxy" | sed 's/declare -x/export/g' > /app/env.sh
 
 # 在 crontab 里先 source 环境变量，再执行备份脚本

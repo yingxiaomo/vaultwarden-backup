@@ -48,11 +48,11 @@ send_notification() {
     if [ -n "$APPRISE_API_URL" ]; then
         echo "使用独立 Apprise 服务发送通知..."
         
-        # 玩法 1：如果用户同时配置了 API 地址和具体的通知 URL (Stateless 模式)
+        # 如果同时配置了 API 地址和具体的通知 URL (Stateless 模式)
         if [ -n "$APPRISE_URL" ]; then
             # 解决 JSON 换行符报错问题：将实际换行符替换为文本 "\n"
             local safe_body="${body//$'\n'/\\n}"
-            # 【新增优化】防止标题或内容中包含双引号导致 JSON 结构破坏
+            # 防止标题或内容中包含双引号导致 JSON 结构破坏
             safe_body="${safe_body//\"/\\\"}"
             local safe_title="${title//\"/\\\"}"
             
@@ -61,7 +61,7 @@ send_notification() {
                  -H "Content-Type: application/json" \
                  -d "{\"title\": \"$safe_title\", \"body\": \"$safe_body\", \"urls\": \"$APPRISE_URL\"}"
                 
-        # 玩法 2：用户在 API 地址里直接写了配置路径 (如 `http://apprise:8000/notify/mybot)`  (Stateful 模式)
+        # 在 API 地址里直接写了配置路径 (如 `http://apprise:8000/notify/mybot)`  (Stateful 模式)
         else
             # 使用 --data-urlencode 提交，完美保留换行符并防止特殊字符截断表单
             curl -s -X POST "$APPRISE_API_URL" \
@@ -79,7 +79,7 @@ send_notification() {
     fi
 }
 
-# 检查必要参数（ZIP_PASSWORD 现在是可选项）
+
 if [ -z "$ZIP_PASSWORD" ]; then
     echo "未设置 ZIP_PASSWORD 环境变量，将进行非加密打包。"
 else
@@ -103,7 +103,7 @@ FREE_SPACE_BYTES=$(df -P "$BACKUP_DIR" | tail -n 1 | awk '{print $4}' | awk '{pr
 MIN_SPACE_BYTES=$((5 * 1024 * 1024 * 1024))
 
 if [ "$FREE_SPACE_BYTES" -lt "$MIN_SPACE_BYTES" ]; then
-    # 获取人类可读的剩余空间
+    # 获取剩余空间
     HUMAN_FREE=$(df -h "$BACKUP_DIR" | tail -n 1 | awk '{print $4}')
     echo "警告: 备份目录所在磁盘空间不足，剩余空间为 $HUMAN_FREE，小于 5GB！"
     send_notification "Vaultwarden 备份警告 ⚠️" "备份目录所在磁盘空间不足，剩余空间为 $HUMAN_FREE，小于 5GB，可能导致备份失败。"
@@ -154,8 +154,7 @@ case "$DB_TYPE" in
             exit 1
         fi
         # MySQL/MariaDB 备份逻辑: 使用 mysqldump 导出
-        # 添加 --single-transaction 防止锁表，不影响 Vaultwarden 写入
-        export MYSQL_PWD="${DB_PASSWORD}" # 注入环境变量，避免日志报警
+        export MYSQL_PWD="${DB_PASSWORD}" 
         echo "正在使用 mysqldump 备份 MySQL 数据库..."
         if mysqldump --single-transaction --quick --opt -h "${DB_HOST:-db}" -P "${DB_PORT:-3306}" -u "${DB_USER}" "${DB_NAME}" > "$SQL_FILE"; then
             echo "✅ MySQL 数据库备份成功。"
@@ -179,8 +178,7 @@ case "$DB_TYPE" in
             exit 1
         fi
         # PostgreSQL 备份逻辑: 使用 pg_dump 导出
-        # 添加 --no-owner 和 --no-privileges 让备份文件在恢复到不同用户环境时更省心
-        export PGPASSWORD="${DB_PASSWORD}" # pg_dump 需要通过环境变量传递密码
+        export PGPASSWORD="${DB_PASSWORD}" 
         echo "正在使用 pg_dump 备份 PostgreSQL 数据库..."
         if pg_dump --no-owner --no-privileges --clean -h "${DB_HOST:-db}" -p "${DB_PORT:-5432}" -U "${DB_USER}" -d "${DB_NAME}" -F p > "$SQL_FILE"; then
             echo "✅ PostgreSQL 数据库备份成功。"

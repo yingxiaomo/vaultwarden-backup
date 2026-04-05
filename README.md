@@ -1,7 +1,7 @@
 # Vaultwarden Backup
 
-[!\[Docker Pulls\](https://img.shields.io/docker/pulls/yingxiaomo/vaultwarden-backup.svg null)](https://hub.docker.com/r/yingxiaomo/vaultwarden-backup)
-[!\[License: MIT\](https://img.shields.io/badge/License-MIT-yellow.svg null)](https://opensource.org/licenses/MIT)
+[![Docker Pulls](https://img.shields.io/docker/pulls/yingxiaomo/vaultwarden-backup.svg)](https://hub.docker.com/r/yingxiaomo/vaultwarden-backup)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 市面上已经有很多现成的备份项目了，但是他们都是大而全，搞的太复杂了，我需要的只是一个简单的 Vaultwarden 备份解决方案，于是就有了这个东西，它支持 SQLite、MySQL 和 PostgreSQL 数据库，并集成了 Apprise 消息通知和 Rclone 云端同步功能。
 
