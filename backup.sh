@@ -122,9 +122,10 @@ rm -f "$SQL_FILE" # 删除未加密的 SQL 文件
 
 # 5. 自动清理过期备份
 echo "正在清理过期备份..."
-# 自动清理 15 天前的本地备份文件，防止磁盘塞满
-find "$BACKUP_DIR" -name "vaultwarden_backup_*.zip" -mtime +15 -exec rm {} \;
-echo "已清理 15 天前的旧本地备份。"
+# 自动清理过期的本地备份文件，防止磁盘塞满
+KEEP_DAYS=${LOCAL_BACKUP_KEEP_DAYS:-15}
+find "$BACKUP_DIR" -name "vaultwarden_backup_*.zip" -mtime +$KEEP_DAYS -exec rm {} \;
+echo "已清理 $KEEP_DAYS 天前的旧本地备份。"
 
 # 6. 发送成功通知
 echo "备份任务完成！"
