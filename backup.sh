@@ -14,7 +14,8 @@ DB_TYPE="${DB_TYPE:-sqlite}"          # 数据库类型: sqlite, mysql, postgres
 DATA_DIR="${DATA_DIR:-/vw_data}"      # Vaultwarden 数据目录
 BACKUP_DIR="${BACKUP_DIR:-/backup}"   # 本地临时备份目录
 ZIP_PASSWORD="${ZIP_PASSWORD:-}"      # 压缩包加密密码 (必填)
-APPRISE_URL="${APPRISE_URL:-}"        # Apprise 通知 URL (必填)
+APPRISE_URL="${APPRISE_URL:-}"        # Apprise 通知 URL (直接使用命令行工具)
+APPRISE_API_URL="${APPRISE_API_URL:-}"  # Apprise 服务 API 地址 (使用独立 Apprise 服务)
 RCLONE_REMOTE="${RCLONE_REMOTE:-}"    # Rclone 远程路径，例如 myremote:/vaultwarden_backup
 
 # 时间戳，用于生成唯一的文件名
@@ -41,11 +42,20 @@ trap cleanup EXIT
 send_notification() {
     local title="$1"  # 通知标题
     local body="$2"   # 通知内容
-    if [ -n "$APPRISE_URL" ]; then
+    
+    # 优先使用独立的 Apprise 服务 API
+    if [ -n "$APPRISE_API_URL" ]; then
+        echo "使用独立 Apprise 服务发送通知..."
+        # 使用 curl 调用 Apprise API
+        curl -X POST "$APPRISE_API_URL/notify" \
+             -H "Content-Type: application/json" \
+             -d "{\"title\": \"$title\", \"body\": \"$body\", \"urls\": \"$APPRISE_URL\"}"
+    elif [ -n "$APPRISE_URL" ]; then
+        echo "使用本地 Apprise 命令行工具发送通知..."
         # 调用 apprise 命令行工具发送通知
         apprise -t "$title" -b "$body" "$APPRISE_URL"
     else
-        echo "未配置 APPRISE_URL，跳过通知发送。"
+        echo "未配置 APPRISE_URL 或 APPRISE_API_URL，跳过通知发送。"
     fi
 }
 

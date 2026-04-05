@@ -36,6 +36,7 @@ services:
       # ---------------------------------------------------------
       # Apprise 通知配置 (用于备份成功/失败时的消息推送)
       # ---------------------------------------------------------
+      # 方式 1: 直接使用本地 Apprise 命令行工具
       # Apprise 通知 URL。
       # 【重要】如果不需要任何通知，请将此行注释掉 (在行首加 #) 或留空。
       #
@@ -52,6 +53,10 @@ services:
       # - Server酱:   schan://SendKey
       # - 邮箱(SMTP): mailto://user:pass@domain.com
       - APPRISE_URL=tgram://123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ/987654321
+      
+      # 方式 2: 使用独立的 Apprise 服务 API
+      # Apprise 服务 API 地址，例如 http://apprise:8000
+      # - APPRISE_API_URL=http://apprise:8000
       
       # ---------------------------------------------------------
       # 定时任务配置
