@@ -19,7 +19,9 @@ RCLONE_REMOTE="${RCLONE_REMOTE:-}"    # Rclone 远程路径，例如 myremote:/v
 
 # 时间戳，用于生成唯一的文件名
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")    # 格式: 年月日_时分秒
-BACKUP_NAME="vaultwarden_backup_${TIMESTAMP}" # 备份文件基础名称
+# 备份文件前缀，可通过环境变量自定义
+PREFIX="${BACKUP_PREFIX:-vaultwarden_backup}"
+BACKUP_NAME="${PREFIX}_${TIMESTAMP}" # 备份文件基础名称
 SQL_FILE="${BACKUP_DIR}/${BACKUP_NAME}.sql"   # 导出的 SQL 文件路径
 ZIP_FILE="${BACKUP_DIR}/${BACKUP_NAME}.zip"   # 最终的加密压缩包路径
 
@@ -64,14 +66,16 @@ case "$DB_TYPE" in
     mysql)
         # MySQL/MariaDB 备份逻辑: 使用 mysqldump 导出
         # 需要环境变量: DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
-        mysqldump -h "${DB_HOST:-db}" -P "${DB_PORT:-3306}" -u "${DB_USER}" -p"${DB_PASSWORD}" "${DB_NAME}" > "$SQL_FILE"
-        ;;
+        # 添加 --single-transaction 防止锁表，不影响 Vaultwarden 写入
+        mysqldump --single-transaction -h "${DB_HOST:-db}" -P "${DB_PORT:-3306}" -u "${DB_USER}" -p"${DB_PASSWORD}" "${DB_NAME}" > "$SQL_FILE"
+        ;; 
     postgres)
         # PostgreSQL 备份逻辑: 使用 pg_dump 导出
         # 需要环境变量: DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
+        # 添加 --no-owner 和 --no-privileges 让备份文件在恢复到不同用户环境时更省心
         export PGPASSWORD="${DB_PASSWORD}" # pg_dump 需要通过环境变量传递密码
-        pg_dump -h "${DB_HOST:-db}" -p "${DB_PORT:-5432}" -U "${DB_USER}" -d "${DB_NAME}" -F p > "$SQL_FILE"
-        ;;
+        pg_dump --no-owner --no-privileges -h "${DB_HOST:-db}" -p "${DB_PORT:-5432}" -U "${DB_USER}" -d "${DB_NAME}" -F p > "$SQL_FILE"
+        ;; 
     *)
         echo "错误: 不支持的数据库类型 $DB_TYPE"
         send_notification "Vaultwarden 备份失败 ❌" "不支持的数据库类型: $DB_TYPE"
@@ -106,6 +110,28 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# 检查压缩包完整性
+echo "正在校验压缩包完整性..."
+if [ -z "$ZIP_PASSWORD" ]; then
+    # 非加密打包的校验
+    if zip -T "$ZIP_FILE" > /dev/null; then
+        echo "✅ 压缩包完整性校验通过。"
+    else
+        echo "❌ 压缩包损坏！"
+        send_notification "Vaultwarden 备份失败 ❌" "生成的压缩包校验失败，请检查磁盘空间。"
+        exit 1
+    fi
+else
+    # 加密打包的校验
+    if zip -T -P "$ZIP_PASSWORD" "$ZIP_FILE" > /dev/null; then
+        echo "✅ 压缩包完整性校验通过。"
+    else
+        echo "❌ 压缩包损坏！"
+        send_notification "Vaultwarden 备份失败 ❌" "生成的压缩包校验失败，请检查磁盘空间。"
+        exit 1
+    fi
+fi
+
 # 3. Rclone 上传逻辑 (如果配置了)
 if [ -n "$RCLONE_REMOTE" ]; then
     echo "正在使用 Rclone 上传备份到 $RCLONE_REMOTE..."
@@ -116,6 +142,14 @@ if [ -n "$RCLONE_REMOTE" ]; then
         echo "错误: Rclone 上传失败！"
         send_notification "Vaultwarden 备份失败 ❌" "Rclone 上传到远程存储失败。"
         exit 1
+    fi
+    
+    # 4. 远端备份自动清理
+    if [ -z "$RCLONE_KEEP_DAYS" ]; then
+        echo "未设置 RCLONE_KEEP_DAYS，跳过远端清理。"
+    else
+        echo "正在清理远端过期备份（保留 $RCLONE_KEEP_DAYS 天）..."
+        rclone --config /config/rclone/rclone.conf delete "$RCLONE_REMOTE" --min-age "${RCLONE_KEEP_DAYS}d" --rmdirs
     fi
 else
     echo "未配置 RCLONE_REMOTE，跳过云端上传，备份仅保留在本地。"
@@ -131,7 +165,7 @@ rm -f "$SQL_FILE" # 删除未加密的 SQL 文件
 echo "正在清理过期备份..."
 # 自动清理过期的本地备份文件，防止磁盘塞满
 KEEP_DAYS=${LOCAL_BACKUP_KEEP_DAYS:-15}
-find "$BACKUP_DIR" -name "vaultwarden_backup_*.zip" -mtime +$KEEP_DAYS -exec rm {} \;
+find "$BACKUP_DIR" -name "${PREFIX}_*.zip" -mtime +$KEEP_DAYS -exec rm {} \;
 echo "已清理 $KEEP_DAYS 天前的旧本地备份。"
 
 # 6. 发送成功通知

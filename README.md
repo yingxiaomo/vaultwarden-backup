@@ -9,11 +9,15 @@
 
 - **多数据库支持**：完美兼容 SQLite (默认)、MySQL/MariaDB 和 PostgreSQL。
 - **灵活的打包选项**：支持 AES 加密打包（需设置密码）和非加密打包，满足不同安全需求。
+- **压缩包完整性校验**：在上传前自动校验压缩包是否损坏，确保备份文件的可靠性。
 - **Rclone 云端同步**：无缝集成 Rclone，支持将备份自动上传至 OneDrive、Google Drive、阿里云盘、WebDAV 等数十种云存储。
+- **远端备份自动清理**：支持自动清理云端过期备份，防止云存储空间被占满。
 - **Apprise 消息通知**：支持 Telegram、钉钉、企业微信、Server酱、Discord、Email 等几乎所有主流通知平台，备份成功或失败实时掌握。
 - **灵活的定时任务**：基于 Cron 表达式，可自定义备份频率。
 - **启动即备份**：支持容器启动时自动执行一次备份，方便验证配置。
 - **本地备份自动清理**：自动清理过期的本地备份文件，防止磁盘空间耗尽。
+- **自定义备份文件前缀**：支持通过环境变量自定义备份文件前缀，方便多实例管理。
+- **数据库备份参数优化**：针对 MySQL 和 PostgreSQL 增加专业参数，提高备份一致性并减少对主程序的影响。
 - **Docker 健康检查**：内置 Healthcheck，实时监控定时任务进程状态。
 
 ## 🚀 快速开始 (Quick Start)
@@ -41,6 +45,10 @@ services:
       - CRON_SCHEDULE=0 2 * * *
       - RUN_ON_STARTUP=true
       - LOCAL_BACKUP_KEEP_DAYS=15
+      # 远端备份保留天数 (可选，如果不设置则不清理)
+      # - RCLONE_KEEP_DAYS=15
+      # 备份文件前缀 (默认 vaultwarden_backup)
+      # - BACKUP_PREFIX=vaultwarden_backup
       # - RCLONE_REMOTE=my_onedrive:/vaultwarden_backup
       # - APPRISE_URL=tgram://bottoken/ChatID
     volumes:
@@ -67,6 +75,8 @@ docker-compose up -d
 | `CRON_SCHEDULE` | 定时备份的 Cron 表达式 | `0 2 * * *` (每天凌晨2点) | 否 |
 | `RUN_ON_STARTUP` | 容器启动时是否立即执行一次备份 (`true`/`false`) | `true` | 否 |
 | `LOCAL_BACKUP_KEEP_DAYS` | 本地备份保留天数 | `15` | 否 |
+| `RCLONE_KEEP_DAYS` | 远端备份保留天数 (可选，如果不设置则不清理) | 无 | 否 |
+| `BACKUP_PREFIX` | 备份文件前缀 | `vaultwarden_backup` | 否 |
 | `APPRISE_URL` | Apprise 通知 URL | 无 | 否 |
 | `RCLONE_REMOTE` | Rclone 远程路径 (例如 `myremote:/backup`) | 无 | 否 |
 | `DATA_DIR` | Vaultwarden 数据目录路径 | `/vw_data` | 否 |

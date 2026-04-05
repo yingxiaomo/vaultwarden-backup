@@ -65,6 +65,12 @@ services:
       
       # 本地备份保留天数 (默认 15 天)
       - LOCAL_BACKUP_KEEP_DAYS=15
+      
+      # 远端备份保留天数 (默认未设置，不清理)
+      # - RCLONE_KEEP_DAYS=15
+      
+      # 备份文件前缀 (默认 vaultwarden_backup)
+      # - BACKUP_PREFIX=vaultwarden_backup
 
       # ---------------------------------------------------------
       # 网络代理配置 (可选，用于解决国内网络访问 Apprise/Rclone 失败的问题)
