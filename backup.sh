@@ -97,12 +97,12 @@ if [ ! -w "$BACKUP_DIR" ]; then
 fi
 
 # 检查磁盘空间
-# 使用 df -P 以一致的格式输出，然后转换为字节进行比较
-FREE_SPACE_BYTES=$(df -P "$BACKUP_DIR" | tail -n 1 | awk '{print $4}' | awk '{print $1 * 1024}')
-# 5GB 转换为字节
-MIN_SPACE_BYTES=$((5 * 1024 * 1024 * 1024))
+# 使用 df -m 以 MB 为单位输出，避免在 32 位系统上发生整数溢出
+FREE_SPACE_MB=$(df -m "$BACKUP_DIR" | tail -n 1 | awk '{print $4}')
+# 5GB 转换为 MB
+MIN_SPACE_MB=$((5 * 1024))
 
-if [ "$FREE_SPACE_BYTES" -lt "$MIN_SPACE_BYTES" ]; then
+if [ "$FREE_SPACE_MB" -lt "$MIN_SPACE_MB" ]; then
     # 获取剩余空间
     HUMAN_FREE=$(df -h "$BACKUP_DIR" | tail -n 1 | awk '{print $4}')
     echo "警告: 备份目录所在磁盘空间不足，剩余空间为 $HUMAN_FREE，小于 5GB！"
