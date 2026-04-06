@@ -6,38 +6,18 @@
     <title>Vaultwarden 备份管理 - 配置</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .card {
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-        .card-header {
-            background-color: #343a40;
-            color: white;
-        }
-        .btn-primary {
-            background-color: #343a40;
-            border-color: #343a40;
-        }
-        .btn-primary:hover {
-            background-color: #23272b;
-            border-color: #23272b;
-        }
-        .nav-link {
-            color: #343a40;
-        }
-        .nav-link.active {
-            color: white !important;
-            background-color: #343a40 !important;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-control {
-            border-radius: 0.25rem;
-        }
+        body { background-color: #f8f9fa; }
+        .card { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); margin-bottom: 20px; }
+        .card-header { background-color: #343a40; color: white; }
+        .btn-primary { background-color: #343a40; border-color: #343a40; }
+        .btn-primary:hover { background-color: #23272b; border-color: #23272b; }
+        .nav-link { color: #343a40; }
+        .nav-link.active { color: white !important; background-color: #343a40 !important; }
+        
+        /* 自定义代码编辑区滚动条，让它更像 IDE */
+        textarea::-webkit-scrollbar { width: 8px; }
+        textarea::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+        textarea::-webkit-scrollbar-track { background: #333; }
     </style>
 </head>
 <body>
@@ -52,26 +32,34 @@
         
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title">环境变量配置</h5>
+                <h5 class="card-title mb-0">📝 编辑 config.yaml</h5>
             </div>
             <div class="card-body">
+                <div class="alert alert-info py-2" role="alert">
+                    你可以直接在这里修改 YAML 格式的配置文件。保存后立即热重载生效，<strong>所有的中文注释将会被永久保留。</strong>
+                </div>
                 <form action="/save_config" method="post">
-                    <div class="row">
-                        {% for key, value in env_vars.items() %}
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="{{ key }}">{{ key }}</label>
-                                    <input type="text" class="form-control" id="{{ key }}" name="{{ key }}" value="{{ value }}">
-                                </div>
-                            </div>
-                        {% endfor %}
+                    <div class="form-group">
+                        <textarea class="form-control text-light bg-dark" id="yaml_content" name="yaml_content" rows="28" style="font-family: monospace; font-size: 13.5px; border: none;" spellcheck="false" required>{{ config_content }}</textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary mt-4">保存配置</button>
+                    <button type="submit" class="btn btn-primary mt-3 w-100 fw-bold">💾 保存并应用配置 (Hot Reload)</button>
                 </form>
             </div>
         </div>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 允许在 textarea 中使用 Tab 键缩进
+        document.getElementById('yaml_content').addEventListener('keydown', function(e) {
+            if (e.key == 'Tab') {
+                e.preventDefault();
+                var start = this.selectionStart;
+                var end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + "  " + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 2;
+            }
+        });
+    </script>
 </body>
 </html>

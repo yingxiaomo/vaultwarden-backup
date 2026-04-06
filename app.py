@@ -166,33 +166,56 @@ async def root(request: Request):
         "env_vars": env_vars
     })
 
-# 配置页面
+# 配置页面 (升级版：直接返回纯文本，保留注释)
 @app.get("/config", response_class=HTMLResponse, dependencies=[Depends(verify_credentials)])
 async def config(request: Request):
-    env_vars = get_env_vars()
+    config_file_path = "/app/config/config.yaml"
+    config_content = ""
+    
+    if os.path.exists(config_file_path):
+        with open(config_file_path, "r", encoding="utf-8") as f:
+            config_content = f.read()
+    else:
+        # 如果文件还不存在，触发一下初始化再读取
+        get_env_vars()
+        with open(config_file_path, "r", encoding="utf-8") as f:
+            config_content = f.read()
+            
     return templates.TemplateResponse(request=request, name="config.html", context={
         "request": request,
-        "env_vars": env_vars
+        "config_content": config_content
     })
 
-# 保存配置
+# 保存配置 (升级版：原样保存 YAML，防止注释丢失，并同步生成 env.sh)
 @app.post("/save_config", dependencies=[Depends(verify_credentials)])
-async def save_config(request: Request, **form_data):
-    env_vars = get_env_vars()
+async def save_config(request: Request, yaml_content: str = Form(...)):
+    config_file_path = "/app/config/config.yaml"
     
-    # 更新环境变量
-    for key, value in form_data.items():
-        if key in env_vars:
-            env_vars[key] = value
+    # 1. 语法检查防线：防止用户把 YAML 写错了导致整个系统崩溃
+    try:
+        env_vars = yaml.safe_load(yaml_content) or {}
+    except Exception as e:
+        # 语法错误，直接退回并报错，绝不覆盖原文件
+        return templates.TemplateResponse(request=request, name="error.html", context={
+            "request": request,
+            "error": f"YAML 语法格式错误，保存失败，请检查空格和缩进: {e}"
+        })
+        
+    # 2. 如果语法正确，将带有注释的【原生文本】直接覆盖保存
+    os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
+    with open(config_file_path, "w", encoding="utf-8") as f:
+        f.write(yaml_content)
     
-    # 保存环境变量
-    save_env_vars(env_vars)
+    # 3. 翻译并同步生成底层的 env.sh
+    env_file_path = "/app/env.sh"
+    with open(env_file_path, "w", encoding="utf-8") as f:
+        for key, value in env_vars.items():
+            if value is not None:  # 防止空值报错
+                f.write(f"export {key}='{value}'\n")
     
-    # 实时刷新系统的定时任务
+    # 4. 实时刷新 Linux 系统的定时任务 (Crontab)
     cron_schedule = env_vars.get("CRON_SCHEDULE", "0 2 * * *")
-    # 生成新的 cron 命令规则
     cron_cmd = f"{cron_schedule} . /app/env.sh && /app/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2\n"
-    # 写入临时文件并让 crontab 重新加载
     with open("/tmp/crontab.txt", "w") as f:
         f.write(cron_cmd)
     subprocess.run(["crontab", "/tmp/crontab.txt"])
