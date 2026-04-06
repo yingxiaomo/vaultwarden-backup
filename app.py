@@ -153,14 +153,24 @@ async def startup_event():
         f.write(cron_cmd)
     subprocess.run(["crontab", "/tmp/crontab.txt"])
     print("✅ 配置同步完成！底层守护进程已就绪。")
+    
+    # [核心修复]：直接在 Python 层面可靠地触发启动备份
+    if str(env_vars.get("RUN_ON_STARTUP", "")).lower() == "true":
+        print("🚀 检测到启动即备份，正在触发首次备份任务...")
+        # 这里不需要 await，直接丢进后台运行，不阻塞面板启动
+        subprocess.Popen(["/bin/bash", "-c", "source /app/env.sh && /app/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2"])
 
 # 主页面
 @app.get("/", response_class=HTMLResponse, dependencies=[Depends(verify_auth)])
 async def root(request: Request):
+    # 获取环境变量
+    env_vars = get_env_vars()
+    
     # 获取备份历史
     backup_history = []
     try:
-        backup_dir = os.environ.get("BACKUP_DIR", "/backup")
+        # 使用 env_vars.get 确保与配置同步
+        backup_dir = env_vars.get("BACKUP_DIR", "/backup")
         if os.path.exists(backup_dir):
             files = os.listdir(backup_dir)
             for file in files:
@@ -241,10 +251,14 @@ async def save_config(request: Request, yaml_content: str = Form(...)):
 # 恢复页面
 @app.get("/restore", response_class=HTMLResponse, dependencies=[Depends(verify_auth)])
 async def restore(request: Request):
+    # 获取环境变量
+    env_vars = get_env_vars()
+    
     # 获取备份历史
     backup_history = []
     try:
-        backup_dir = os.environ.get("BACKUP_DIR", "/backup")
+        # 使用 env_vars.get 确保与配置同步
+        backup_dir = env_vars.get("BACKUP_DIR", "/backup")
         if os.path.exists(backup_dir):
             files = os.listdir(backup_dir)
             for file in files:
