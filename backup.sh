@@ -9,6 +9,15 @@ export HTTP_PROXY="${HTTP_PROXY:-}"   # HTTP 代理地址，例如 http://192.16
 export HTTPS_PROXY="${HTTPS_PROXY:-}" # HTTPS 代理地址，例如 http://192.168.1.100:7890
 export ALL_PROXY="${ALL_PROXY:-}"     # SOCKS5 代理地址，例如 socks5://192.168.1.100:7890
 
+# 日志文件路径
+LOG_FILE="/app/config/backup.log"
+# 确保日志目录存在
+mkdir -p "$(dirname "$LOG_FILE")"
+# 清空旧日志，保留最新记录
+> "$LOG_FILE"
+# 重定向输出到日志文件
+exec > >(tee -a "$LOG_FILE") 2>&1
+
 # 基础配置变量 (可通过环境变量覆盖)
 DB_TYPE="${DB_TYPE:-sqlite}"          # 数据库类型: sqlite, mysql, postgres
 DATA_DIR="${DATA_DIR:-/vw_data}"      # Vaultwarden 数据目录

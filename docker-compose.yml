@@ -113,8 +113,8 @@ services:
     #   - db
     
     healthcheck:
-      # 检查 crond 进程是否在运行
-      test: ["CMD", "pgrep", "crond" ]
-      interval: 1m
+      # 检查 Web 面板是否正常运行
+      test: ["CMD", "curl", "-f", "http://localhost:9876/" ]
+      interval: 30s
       timeout: 10s
       retries: 3

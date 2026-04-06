@@ -1,12 +1,14 @@
-from fastapi import FastAPI, Request, Form, Depends
+from fastapi import FastAPI, Request, Form, Depends, BackgroundTasks, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import subprocess
 import os
-import json
+import yaml
 import datetime
 import docker
+import secrets
 
 # 初始化 FastAPI 应用
 app = FastAPI()
@@ -23,6 +25,23 @@ try:
 except Exception as e:
     print(f"Docker 连接失败: {e}")
     client = None
+
+# 身份验证配置
+security = HTTPBasic()
+
+# 验证凭据
+def verify_credentials(credentials: HTTPBasicCredentials = Depends(security)):
+    # 从配置中获取用户名和密码
+    env_vars = get_env_vars()
+    correct_username = secrets.compare_digest(credentials.username, env_vars.get("WEB_USER", "admin"))
+    correct_password = secrets.compare_digest(credentials.password, env_vars.get("WEB_PASS", "admin"))
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials
 
 import yaml
 
@@ -67,8 +86,12 @@ def save_env_vars(env_vars):
         for key, value in env_vars.items():
             f.write(f"export {key}='{value}'\n")
 
+# 后台任务：执行备份
+def run_backup_script():
+    subprocess.run("source /app/env.sh && /app/backup.sh", shell=True, executable="/bin/bash")
+
 # 主页面
-@app.get("/", response_class=HTMLResponse)
+@app.get("/", response_class=HTMLResponse, dependencies=[Depends(verify_credentials)])
 async def root(request: Request):
     # 获取磁盘空间
     try:
@@ -124,7 +147,7 @@ async def root(request: Request):
     })
 
 # 配置页面
-@app.get("/config", response_class=HTMLResponse)
+@app.get("/config", response_class=HTMLResponse, dependencies=[Depends(verify_credentials)])
 async def config(request: Request):
     env_vars = get_env_vars()
     return templates.TemplateResponse("config.html", {
@@ -133,7 +156,7 @@ async def config(request: Request):
     })
 
 # 保存配置
-@app.post("/save_config")
+@app.post("/save_config", dependencies=[Depends(verify_credentials)])
 async def save_config(request: Request, **form_data):
     env_vars = get_env_vars()
     
@@ -157,7 +180,7 @@ async def save_config(request: Request, **form_data):
     return RedirectResponse("/", status_code=303)
 
 # 恢复页面
-@app.get("/restore", response_class=HTMLResponse)
+@app.get("/restore", response_class=HTMLResponse, dependencies=[Depends(verify_credentials)])
 async def restore(request: Request):
     # 获取备份历史
     backup_history = []
@@ -185,7 +208,7 @@ async def restore(request: Request):
     })
 
 # 执行恢复
-@app.post("/do_restore")
+@app.post("/do_restore", dependencies=[Depends(verify_credentials)])
 async def do_restore(request: Request, backup_file: str = Form(...)):
     try:
         # 获取最新的环境变量
@@ -228,11 +251,12 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         })
 
 # 执行备份
-@app.post("/do_backup")
-async def do_backup(request: Request):
+@app.post("/do_backup", dependencies=[Depends(verify_credentials)])
+async def do_backup(request: Request, background_tasks: BackgroundTasks):
     try:
-        # 执行备份脚本，先source最新配置
-        subprocess.run("source /app/env.sh && /app/backup.sh", shell=True, check=True, executable="/bin/bash")
+        # 添加后台任务
+        background_tasks.add_task(run_backup_script)
+        # 立即返回，避免网页卡顿
         return RedirectResponse("/", status_code=303)
     except Exception as e:
         print(f"备份失败: {e}")
@@ -240,6 +264,23 @@ async def do_backup(request: Request):
             "request": request,
             "error": f"备份失败: {e}"
         })
+
+# 获取备份日志
+@app.get("/logs", dependencies=[Depends(verify_credentials)])
+async def get_backup_logs():
+    log_file = "/app/config/backup.log"
+    try:
+        if os.path.exists(log_file):
+            with open(log_file, "r", encoding="utf-8") as f:
+                # 读取最后50行日志
+                lines = f.readlines()
+                last_lines = lines[-50:]
+                log_content = "".join(last_lines)
+                return {"logs": log_content}
+        else:
+            return {"logs": "日志文件不存在，尚未执行备份任务"}
+    except Exception as e:
+        return {"logs": f"读取日志失败: {e}"}
 
 if __name__ == "__main__":
     import uvicorn

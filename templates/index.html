@@ -103,8 +103,42 @@
                 </div>
             </div>
         </div>
+        
+        <!-- 备份日志 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">备份日志</h5>
+            </div>
+            <div class="card-body">
+                <div class="bg-dark text-light p-3 rounded" style="height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+                    <pre id="backup-logs">加载中...</pre>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 加载备份日志
+        function loadLogs() {
+            fetch('/logs')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('backup-logs').textContent = data.logs;
+                    // 滚动到底部
+                    const logsElement = document.getElementById('backup-logs');
+                    logsElement.scrollTop = logsElement.scrollHeight;
+                })
+                .catch(error => {
+                    document.getElementById('backup-logs').textContent = '加载日志失败: ' + error;
+                });
+        }
+        
+        // 初始加载
+        loadLogs();
+        
+        // 每5秒刷新一次日志
+        setInterval(loadLogs, 5000);
+    </script>
 </body>
 </html>
