@@ -66,26 +66,42 @@ def verify_auth(request: Request):
 def get_env_vars():
     # 如果有 config.yaml，直接读取
     if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-            env_vars = yaml.safe_load(f)
+        try:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                env_vars = yaml.safe_load(f)
+        except Exception as e:
+            # YAML 解析失败，创建新的配置文件
+            print(f"配置文件解析失败: {e}，创建新的配置文件")
+            env_vars = create_default_config()
     else:
         # 如果没有，从 config.yaml.example 中读取带注释的配置
         env_vars = {}
         example_config = "/app/config.yaml.example"
         if os.path.exists(example_config):
-            with open(example_config, "r", encoding="utf-8") as f:
-                # 读取文件内容，保留注释
-                config_content = f.read()
-                # 保存到 config.yaml
-                os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
-                with open(CONFIG_FILE, "w", encoding="utf-8") as f_out:
-                    f_out.write(config_content)
-                # 然后重新读取解析为字典
-                with open(CONFIG_FILE, "r", encoding="utf-8") as f_in:
-                    env_vars = yaml.safe_load(f_in)
+            try:
+                with open(example_config, "r", encoding="utf-8") as f:
+                    # 读取文件内容，保留注释
+                    config_content = f.read()
+                    # 保存到 config.yaml
+                    os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
+                    with open(CONFIG_FILE, "w", encoding="utf-8") as f_out:
+                        f_out.write(config_content)
+                    # 然后重新读取解析为字典
+                    with open(CONFIG_FILE, "r", encoding="utf-8") as f_in:
+                        env_vars = yaml.safe_load(f_in)
+            except Exception as e:
+                # 示例文件也失败，创建默认配置
+                print(f"示例配置文件解析失败: {e}，创建默认配置")
+                env_vars = create_default_config()
         else:
             # 如果 example 也不存在，创建一个带有完整注释的配置文件
-            config_content = """# Vaultwarden 备份配置文件
+            env_vars = create_default_config()
+    
+    return env_vars
+
+def create_default_config():
+    # 创建一个带有完整注释的配置文件
+    config_content = """# Vaultwarden 备份配置文件
 # 请根据实际情况修改以下配置
 
 # 数据库类型 (sqlite, mysql, postgres)
@@ -152,15 +168,15 @@ TZ: Asia/Shanghai
 # Web 面板账号密码
 WEB_USER: admin
 WEB_PASS: admin"""
-            
-            # 保存到 config.yaml
-            os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
-            with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-                f.write(config_content)
-            
-            # 然后重新读取解析为字典
-            with open(CONFIG_FILE, "r", encoding="utf-8") as f_in:
-                env_vars = yaml.safe_load(f_in)
+    
+    # 保存到 config.yaml
+    os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
+    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+        f.write(config_content)
+    
+    # 然后重新读取解析为字典
+    with open(CONFIG_FILE, "r", encoding="utf-8") as f_in:
+        env_vars = yaml.safe_load(f_in)
     
     return env_vars
 
