@@ -329,14 +329,20 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         
         if create_temp_backup and os.path.exists(data_dir):
             print("正在创建恢复前的临时备份...")
+            # 清理旧的临时备份目录
+            if os.path.exists(temp_backup_dir):
+                shutil.rmtree(temp_backup_dir)
+            
+            # 使用移动操作而不是拷贝操作，避免磁盘空间翻倍
+            # 1. 先创建临时备份目录
             os.makedirs(temp_backup_dir, exist_ok=True)
-            # 备份数据目录中的所有文件
+            
+            # 2. 移动所有文件到临时备份目录
             for item in os.listdir(data_dir):
                 item_path = os.path.join(data_dir, item)
-                if item != "temp_backup" and os.path.isdir(item_path):
-                    shutil.copytree(item_path, os.path.join(temp_backup_dir, item))
-                elif item != "temp_backup" and os.path.isfile(item_path):
-                    shutil.copy2(item_path, os.path.join(temp_backup_dir, item))
+                if item != "temp_backup":
+                    dest_path = os.path.join(temp_backup_dir, item)
+                    shutil.move(item_path, dest_path)
             print("✅ 临时备份创建成功")
         else:
             print("⚠️ 跳过临时备份创建")
