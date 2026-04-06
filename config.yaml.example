@@ -30,8 +30,8 @@ BACKUP_PREFIX: vaultwarden_backup
 BACKUP_DIR: /backup
 
 # 数据目录
-# Vaultwarden 数据存储目录，通常为 /vw_data
-DATA_DIR: /vw_data
+# Vaultwarden 数据存储目录，通常为 /data
+DATA_DIR: /data
 
 # 定时任务执行计划（Cron 表达式）
 # 格式：分 时 日 月 周
