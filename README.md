@@ -20,6 +20,8 @@
 - **自定义备份文件前缀**：支持通过环境变量自定义备份文件前缀，方便多实例管理。
 - **数据库备份参数优化**：针对 MySQL 和 PostgreSQL 增加专业参数，提高备份一致性并减少对主程序的影响。
 - **Docker 健康检查**：内置 Healthcheck，实时监控定时任务进程状态。
+- **Web 面板管理**：提供可视化的 Web 界面，支持配置管理、备份历史查看和一键恢复操作。
+- **开箱即用**：支持通过 Web 面板进行全配置，无需修改 docker-compose.yml 文件。
 
 ## 🚀 快速开始 (Quick Start)
 
@@ -69,6 +71,50 @@ services:
 ```bash
 docker-compose up -d
 ```
+
+### 4. 使用 Web 面板管理（推荐）
+
+从 v2.0 版本开始，我们提供了可视化的 Web 面板，支持完全通过网页进行配置管理，无需修改 `docker-compose.yml` 文件。
+
+#### 4.1 极简版 docker-compose.yml
+
+如果你想使用 Web 面板进行全配置，可以使用以下极简版配置：
+
+```yaml
+version: '3.8'
+
+services:
+  vaultwarden-backup-web:
+    image: yingxiaomo/vaultwarden-backup:dev
+    container_name: vaultwarden_backup_dev
+    restart: on-failure
+    
+    ports:
+      - "9876:9876"  # Web 访问端口
+    
+    volumes:
+      # 物理文件的挂载必须保留
+      - ./vw_data:/vw_data:ro
+      - ./backups:/backup
+      - ./rclone_config:/config/rclone/
+      - ./env.sh:/app/env.sh  # 用于持久化 Web 面板配置
+      - /var/run/docker.sock:/var/run/docker.sock
+```
+
+#### 4.2 访问 Web 面板
+
+启动容器后，在浏览器中访问：
+
+```
+http://localhost:9876
+```
+
+#### 4.3 配置说明
+
+1. **首次访问**：容器启动时会自动初始化一个空的配置文件，Web 面板会显示默认配置。
+2. **修改配置**：在 Web 面板中修改配置后，点击 "保存配置" 按钮，配置会自动保存到 `./env.sh` 文件中。
+3. **持久化**：由于配置文件被映射到宿主机的 `./env.sh` 文件，即使容器重启，配置也会永久保存。
+4. **一键操作**：Web 面板支持一键执行备份和恢复操作，方便快捷。
 
 ## ⚙️ 环境变量说明 (Environment Variables)
 
