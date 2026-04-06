@@ -366,38 +366,26 @@ async def setup(request: Request):
 @app.post("/do_setup")
 async def do_setup(request: Request, username: str = Form(...), password: str = Form(...)):
     config_file_path = "/app/config/config.yaml"
-    example_config = "/app/config.yaml.example"
     
-    # 读取配置文件内容，保留注释
-    if os.path.exists(config_file_path):
-        with open(config_file_path, "r", encoding="utf-8") as f:
-            config_content = f.read()
-    elif os.path.exists(example_config):
-        with open(example_config, "r", encoding="utf-8") as f:
-            config_content = f.read()
-    else:
-        # 如果都不存在，创建一个基本配置
-        config_content = "# Vaultwarden 备份配置文件\n# 请根据实际情况修改以下配置\n\nDB_TYPE: sqlite\nCRON_SCHEDULE: 0 2 * * *\nRUN_ON_STARTUP: 'true'\nLOCAL_BACKUP_KEEP_DAYS: '15'\nBACKUP_PREFIX: vaultwarden_backup\nBACKUP_DIR: /backup\nDATA_DIR: /vw_data\nTZ: Asia/Shanghai\n"
+    # 此时 config.yaml 百分之百存在（已被 startup_event 创建）
+    with open(config_file_path, "r", encoding="utf-8") as f:
+        config_content = f.read()
     
-    # 更新账号密码
-    # 查找并替换 WEB_USER 和 WEB_PASS
+    # 查找并替换 WEB_USER 和 WEB_PASS (兼容已被注释的情况)
     import re
-    config_content = re.sub(r'(WEB_USER:).*', f'WEB_USER: {username}', config_content)
-    config_content = re.sub(r'(WEB_PASS:).*', f'WEB_PASS: {password}', config_content)
+    config_content = re.sub(r'^#?\s*WEB_USER:.*$', f'WEB_USER: {username}', config_content, flags=re.MULTILINE)
+    config_content = re.sub(r'^#?\s*WEB_PASS:.*$', f'WEB_PASS: {password}', config_content, flags=re.MULTILINE)
     
-    # 如果没有 WEB_USER 和 WEB_PASS，添加到文件末尾
+    # 如果模板里压根没这两行，追加到末尾
     if 'WEB_USER:' not in config_content:
         config_content += f'\n# Web 面板账号密码\nWEB_USER: {username}\nWEB_PASS: {password}\n'
     
     # 保存配置
-    os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
     with open(config_file_path, "w", encoding="utf-8") as f:
         f.write(config_content)
     
-    # 读取更新后的配置
+    # 同步更新 env.sh
     env_vars = get_env_vars()
-    
-    # 生成 env.sh
     env_file_path = "/app/env.sh"
     with open(env_file_path, "w", encoding="utf-8") as f:
         for key, value in env_vars.items():
@@ -409,7 +397,7 @@ async def do_setup(request: Request, username: str = Form(...), password: str = 
     
     # 重定向到主页，并设置会话 Cookie
     response = RedirectResponse(url="/", status_code=303)
-    response.set_cookie("auth_token", session_token, httponly=True, max_age=86400)  # 24小时
+    response.set_cookie("auth_token", session_token, httponly=True, max_age=86400)
     return response
 
 # 登录页面
