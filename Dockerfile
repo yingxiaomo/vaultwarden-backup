@@ -1,5 +1,5 @@
 
-FROM postgres:16-alpine
+FROM alpine:latest
 
 ENV RCLONE_CONFIG=/config/rclone/rclone.conf
 
@@ -14,6 +14,7 @@ RUN apk add --no-cache \
     bash \
     tzdata \
     curl \
+    postgresql-client \
     && pip3 install --no-cache-dir --break-system-packages apprise
 
 RUN mkdir -p /app /vw_data /backup /config/rclone
