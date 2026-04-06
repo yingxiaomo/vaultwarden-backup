@@ -77,22 +77,10 @@ def get_env_vars():
     # 如果不存在或解析失败，进入全自动初始化流程
     return create_default_config()
 
-# 生成默认配置：融合 example 模板和 docker-compose 环境变量
+# 生成默认配置：使用内置硬编码模板并吸收 docker-compose 环境变量
 def create_default_config():
-    example_config = "/app/config.yaml.example"
-    config_content = ""
-    
-    # 1. 优先尝试读取镜像里自带的带注释模板
-    if os.path.exists(example_config):
-        try:
-            with open(example_config, "r", encoding="utf-8") as f:
-                config_content = f.read()
-        except Exception:
-            pass
-            
-    # 2. 如果模板丢失，使用备用硬编码字符串兜底
-    if not config_content:
-        config_content = """# Vaultwarden 备份配置文件
+    # 1. 唯一事实来源：内置的硬编码模板
+    config_content = """# Vaultwarden 备份配置文件
 # 请根据实际情况修改以下配置
 
 DB_TYPE: sqlite
@@ -111,7 +99,7 @@ TZ: Asia/Shanghai
 WEB_USER: admin
 WEB_PASS: admin"""
 
-    # 3. [核心魔法]：动态吸收 docker-compose 传进来的环境变量
+    # 2. [核心魔法]：动态吸收 docker-compose 传进来的环境变量
     import re
     for key, value in os.environ.items():
         if key in ["PATH", "HOSTNAME", "PWD", "HOME", "SHLVL", "TERM"]:
@@ -125,12 +113,12 @@ WEB_PASS: admin"""
             else:
                 config_content += f'\n{key}: {safe_value}'
     
-    # 4. 保存生成的神奇 YAML
+    # 3. 保存生成的神奇 YAML 到 /app/config 目录
     os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         f.write(config_content)
     
-    # 5. 读取并返回字典给系统使用
+    # 4. 读取并返回字典给系统使用
     with open(CONFIG_FILE, "r", encoding="utf-8") as f_in:
         return yaml.safe_load(f_in) or {}
 
