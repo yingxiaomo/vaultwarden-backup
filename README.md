@@ -57,7 +57,7 @@ services:
       # 时区配置 (默认 Asia/Shanghai)
       - TZ=Asia/Shanghai
     volumes:
-      - /path/to/your/vw_data:/vw_data:ro
+      - /path/to/your/data:/data:ro
       - ./backups:/backup
       # - ./rclone_config:/config/rclone/
 ```
