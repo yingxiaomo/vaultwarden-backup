@@ -108,67 +108,83 @@ def create_default_config():
 # 请根据实际情况修改以下配置
 
 # 数据库类型 (sqlite, mysql, postgres)
+# 注意：Vaultwarden 默认使用 SQLite 数据库
 DB_TYPE: sqlite
 
 # MySQL 数据库配置（仅当 DB_TYPE=mysql 时使用）
-DB_HOST: db
-DB_PORT: '3306'
-DB_USER: vaultwarden
-DB_NAME: vaultwarden
+# DB_HOST: db              # MySQL 数据库主机地址
+# DB_PORT: '3306'          # MySQL 数据库端口
+# DB_USER: vaultwarden     # MySQL 数据库用户名
+# DB_NAME: vaultwarden     # MySQL 数据库名称
 
 # PostgreSQL 数据库配置（仅当 DB_TYPE=postgres 时使用）
-PG_HOST: db
-PG_PORT: '5432'
-PG_USER: vaultwarden
-PG_DB: vaultwarden
+# PG_HOST: db              # PostgreSQL 数据库主机地址
+# PG_PORT: '5432'          # PostgreSQL 数据库端口
+# PG_USER: vaultwarden     # PostgreSQL 数据库用户名
+# PG_DB: vaultwarden       # PostgreSQL 数据库名称
 
 # 压缩包 AES 加密密码（可选，如果不设置则进行非加密打包）
+# 注意：设置密码后，恢复时需要输入相同的密码
 # ZIP_PASSWORD: your_secure_zip_password
 
 # 备份文件前缀（默认 vaultwarden_backup）
+# 备份文件格式：{BACKUP_PREFIX}_{日期时间}.zip
 BACKUP_PREFIX: vaultwarden_backup
 
 # 备份目录
+# 备份文件将存储在此目录中
 BACKUP_DIR: /backup
 
 # 数据目录
+# Vaultwarden 数据存储目录，通常为 /vw_data
 DATA_DIR: /vw_data
 
 # 定时任务执行计划（Cron 表达式）
 # 格式：分 时 日 月 周
 # 示例：0 2 * * * （每天凌晨 2 点）
+# 示例：0 */6 * * * （每6小时执行一次）
 CRON_SCHEDULE: 0 2 * * *
 
 # 启动时执行备份（true/false）
+# 设置为 'true' 时，容器启动时会自动执行一次备份
 RUN_ON_STARTUP: 'true'
 
 # 本地备份保留天数
+# 超过此天数的本地备份文件将被自动清理
 LOCAL_BACKUP_KEEP_DAYS: '15'
 
 # 远端备份保留天数（可选，如果不设置则不清理）
+# 超过此天数的远端备份文件将被自动清理
 # RCLONE_KEEP_DAYS: '15'
 
 # Rclone 远程存储配置
 # 格式：remote_name:path
 # 示例：my_onedrive:/vaultwarden_backup
+# 注意：需要先在容器中配置好 rclone
 # RCLONE_REMOTE: my_onedrive:/vaultwarden_backup
 
 # Apprise 通知配置
 # 方式 1: 直接配置通知 URL
+# 支持多种通知服务，如 Telegram、Email、Discord 等
+# 示例：tgram://bottoken/ChatID
 # APPRISE_URL: tgram://bottoken/ChatID
 
 # 方式 2: 使用独立的 Apprise 服务 API
+# 如果您有独立部署的 Apprise 服务，可以使用此配置
 # APPRISE_API_URL: http://apprise:8000
 
 # 时区配置
+# 设置系统时区，用于备份文件命名和日志时间
 TZ: Asia/Shanghai
 
 # HTTP 代理配置（可选）
+# 如果您的网络需要通过代理访问外部服务，请配置以下代理
 # HTTP_PROXY: http://192.168.1.100:7890
 # HTTPS_PROXY: http://192.168.1.100:7890
 # ALL_PROXY: socks5://192.168.1.100:7890
 
 # Web 面板账号密码
+# 首次访问时会提示设置，此处为默认值
 WEB_USER: admin
 WEB_PASS: admin"""
     
