@@ -15,7 +15,7 @@ RUN apk add --no-cache \
     tzdata \
     curl \
     postgresql-client \
-    && pip3 install --no-cache-dir --break-system-packages apprise fastapi uvicorn jinja2 python-docker
+    && pip3 install --no-cache-dir --break-system-packages apprise fastapi uvicorn jinja2 python-docker pyyaml
 
 RUN mkdir -p /app /vw_data /backup /config/rclone
 

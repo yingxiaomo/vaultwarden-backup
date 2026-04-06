@@ -24,19 +24,19 @@ except Exception as e:
     print(f"Docker 连接失败: {e}")
     client = None
 
-import json
+import yaml
 
-CONFIG_FILE = "/app/config/config.json"
+CONFIG_FILE = "/app/config/config.yaml"
 ENV_FILE = "/app/env.sh"
 
-# 读取配置：优先读 config.json，如果没有则尝试从系统的环境变量中初始化一份默认值
+# 读取配置：优先读 config.yaml，如果没有则尝试从系统的环境变量中初始化一份默认值
 def get_env_vars():
-    # 如果有 config.json，直接读取
+    # 如果有 config.yaml，直接读取
     if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, "r") as f:
-            return json.load(f)
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f)
             
-    # 如果没有，从现有的 env.sh 或者 os.environ 中提取默认值，并创建 config.json
+    # 如果没有，从现有的 env.sh 或者 os.environ 中提取默认值，并创建 config.yaml
     env_vars = {}
     if os.path.exists(ENV_FILE):
         with open(ENV_FILE, "r") as f:
@@ -48,19 +48,19 @@ def get_env_vars():
                         value = value[1:-1]
                     env_vars[key] = value
     
-    # 第一次运行，把读取到的默认值保存为 JSON
+    # 第一次运行，把读取到的默认值保存为 YAML
     os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(env_vars, f, indent=4)
+    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+        yaml.dump(env_vars, f, default_flow_style=False, allow_unicode=True, indent=2)
         
     return env_vars
 
-# 保存配置：同时保存为 JSON 和 Shell 脚本
+# 保存配置：同时保存为 YAML 和 Shell 脚本
 def save_env_vars(env_vars):
-    # 1. 保存结构化的 config.json (Web 面板使用)
+    # 1. 保存结构化的 config.yaml (Web 面板使用)
     os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(env_vars, f, indent=4)
+    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+        yaml.dump(env_vars, f, default_flow_style=False, allow_unicode=True, indent=2)
         
     # 2. 同步生成 env.sh (底层 Bash 脚本使用)
     with open(ENV_FILE, "w") as f:

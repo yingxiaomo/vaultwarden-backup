@@ -97,7 +97,7 @@ services:
       - ./vw_data:/vw_data:ro
       - ./backups:/backup
       - ./rclone_config:/config/rclone/
-      - ./config:/app/config  # 用于持久化 Web 面板配置（config.json）
+      - ./config:/app/config  # 用于持久化 Web 面板配置（config.yaml）
       - /var/run/docker.sock:/var/run/docker.sock
 ```
 
@@ -111,43 +111,54 @@ http://localhost:9876
 
 #### 4.3 配置说明
 
-1. **首次访问**：容器启动时会自动在 `./config` 目录中初始化 `config.json` 文件，Web 面板会显示默认配置。
-2. **修改配置**：在 Web 面板中修改配置后，点击 "保存配置" 按钮，配置会自动保存到 `./config/config.json` 文件中。
+1. **首次访问**：容器启动时会自动在 `./config` 目录中初始化 `config.yaml` 文件，Web 面板会显示默认配置。
+2. **修改配置**：在 Web 面板中修改配置后，点击 "保存配置" 按钮，配置会自动保存到 `./config/config.yaml` 文件中。
 3. **持久化**：由于配置文件被映射到宿主机的 `./config` 目录，即使容器重启，配置也会永久保存。
 4. **配置迁移**：只需拷贝 `./config` 目录，即可在不同机器间快速迁移配置。
 5. **一键操作**：Web 面板支持一键执行备份和恢复操作，方便快捷。
 
-#### 4.4 config.json 示例
+#### 4.4 config.yaml 示例
 
-以下是一个完整的 `config.json` 配置示例，包含所有可用的配置项和详细说明：
+以下是一个完整的 `config.yaml` 配置示例，包含所有可用的配置项和详细说明：
 
-```json
-{
-    "DB_TYPE": "sqlite",             // 数据库类型：sqlite、mysql、postgres
-    "ZIP_PASSWORD": "your_secure_password",  // 压缩包加密密码，不设置则为非加密打包
-    "CRON_SCHEDULE": "0 2 * * *",    // Cron 表达式，默认每天凌晨 2 点执行
-    "RUN_ON_STARTUP": "true",         // 容器启动时是否立即执行备份
-    "LOCAL_BACKUP_KEEP_DAYS": "15",   // 本地备份保留天数
-    "RCLONE_KEEP_DAYS": "30",        // 远端备份保留天数
-    "BACKUP_PREFIX": "vaultwarden_backup",  // 备份文件前缀
-    "RCLONE_REMOTE": "my_onedrive:/vaultwarden_backup",  // Rclone 远程路径
-    "APPRISE_URL": "tgram://bottoken/ChatID",  // Apprise 通知 URL
-    "APPRISE_API_URL": "http://apprise:8000",  // 独立 Apprise 服务 API 地址
-    "DATA_DIR": "/vw_data",           // Vaultwarden 数据目录
-    "BACKUP_DIR": "/backup",          // 本地备份目录
-    "DB_HOST": "db",                  // 数据库主机地址（仅 MySQL/PostgreSQL）
-    "DB_PORT": "3306",                // 数据库端口（MySQL: 3306, PostgreSQL: 5432）
-    "DB_USER": "vaultwarden",         // 数据库用户名（仅 MySQL/PostgreSQL）
-    "DB_PASSWORD": "your_db_password",  // 数据库密码（仅 MySQL/PostgreSQL）
-    "DB_NAME": "vaultwarden",         // 数据库名称（仅 MySQL/PostgreSQL）
-    "HTTP_PROXY": "http://192.168.1.100:7890",  // HTTP 代理地址
-    "HTTPS_PROXY": "http://192.168.1.100:7890",  // HTTPS 代理地址
-    "ALL_PROXY": "socks5://192.168.1.100:7890",  // SOCKS5 代理地址
-    "TZ": "Asia/Shanghai"             // 时区设置
-}
+```yaml
+# 数据库配置
+DB_TYPE: sqlite  # 数据库类型：sqlite、mysql、postgres
+
+# 备份配置
+ZIP_PASSWORD: your_secure_password  # 压缩包加密密码，不设置则为非加密打包
+CRON_SCHEDULE: '0 2 * * *'  # Cron 表达式，默认每天凌晨 2 点执行
+RUN_ON_STARTUP: 'true'  # 容器启动时是否立即执行备份
+LOCAL_BACKUP_KEEP_DAYS: '15'  # 本地备份保留天数
+RCLONE_KEEP_DAYS: '30'  # 远端备份保留天数
+BACKUP_PREFIX: vaultwarden_backup  # 备份文件前缀
+
+# 云端同步配置
+RCLONE_REMOTE: my_onedrive:/vaultwarden_backup  # Rclone 远程路径
+
+# 通知配置
+APPRISE_URL: tgram://bottoken/ChatID  # Apprise 通知 URL
+APPRISE_API_URL: http://apprise:8000  # 独立 Apprise 服务 API 地址
+
+# 路径配置
+DATA_DIR: /vw_data  # Vaultwarden 数据目录
+BACKUP_DIR: /backup  # 本地备份目录
+
+# 数据库连接信息（仅 MySQL/PostgreSQL）
+DB_HOST: db  # 数据库主机地址
+DB_PORT: '3306'  # 数据库端口（MySQL: 3306, PostgreSQL: 5432）
+DB_USER: vaultwarden  # 数据库用户名
+DB_PASSWORD: your_db_password  # 数据库密码
+DB_NAME: vaultwarden  # 数据库名称
+
+# 网络代理设置
+HTTP_PROXY: http://192.168.1.100:7890  # HTTP 代理地址
+HTTPS_PROXY: http://192.168.1.100:7890  # HTTPS 代理地址
+ALL_PROXY: socks5://192.168.1.100:7890  # SOCKS5 代理地址
+
+# 时区设置
+TZ: Asia/Shanghai  # 时区设置
 ```
-
-**注意：** 以上示例中的注释（// 开头的部分）是为了说明配置项的作用，实际使用时请移除这些注释，因为标准 JSON 格式不支持注释。
 
 ## ⚙️ 环境变量说明 (Environment Variables)
 
