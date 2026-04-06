@@ -98,7 +98,7 @@ fi
 
 # 检查磁盘空间
 # 使用 df -m 以 MB 为单位输出，避免在 32 位系统上发生整数溢出
-FREE_SPACE_MB=$(df -m "$BACKUP_DIR" | tail -n 1 | awk '{print $4}')
+FREE_SPACE_MB=$(df -m "$BACKUP_DIR" | tail -n 1 | awk '{print $4}' | tr -d '%')
 # 5GB 转换为 MB
 MIN_SPACE_MB=$((5 * 1024))
 
