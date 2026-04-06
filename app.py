@@ -28,9 +28,11 @@ try:
 except Exception as e:
     print(f"Docker 连接失败: {e}")
     client = None
-
+# 全局变量
 CONFIG_FILE = "/app/config/config.yaml"
 ENV_FILE = "/app/env.sh"
+# 备份任务锁，防止并发执行
+is_backup_running = False
 
 # 定义鉴权失败的拦截异常
 class RequiresSetupException(Exception): pass
@@ -94,11 +96,13 @@ DATA_DIR: /vw_data
 CRON_SCHEDULE: 0 2 * * *
 RUN_ON_STARTUP: 'true'
 LOCAL_BACKUP_KEEP_DAYS: '15'
+# 恢复前创建临时备份（可能会导致磁盘空间翻倍，建议在磁盘空间充足时启用）
+CREATE_TEMP_BACKUP: 'true'
 # ZIP_PASSWORD: your_secure_zip_password
 # RCLONE_KEEP_DAYS: '15'
 # RCLONE_REMOTE: my_onedrive:/vaultwarden_backup
 # APPRISE_URL: tgram://bottoken/ChatID
-# APPRISE_API_URL: http://apprise:8000
+# APPRISE_API_URL: http://apprise:8000  
 TZ: Asia/Shanghai
 WEB_USER: admin
 WEB_PASS: admin"""
@@ -130,7 +134,19 @@ WEB_PASS: admin"""
 
 # 后台任务：执行备份
 def run_backup_script():
-    subprocess.run("source /app/env.sh && /app/backup.sh", shell=True, executable="/bin/bash")
+    global is_backup_running
+    try:
+        # 设置备份任务锁
+        is_backup_running = True
+        print("✅ 备份任务开始执行")
+        
+        # 执行备份脚本
+        subprocess.run("source /app/env.sh && /app/backup.sh", shell=True, executable="/bin/bash")
+        print("✅ 备份任务执行完成")
+    finally:
+        # 释放备份任务锁
+        is_backup_running = False
+        print("🔓 备份任务锁已释放")
 
 # 容器冷启动初始化事件
 @app.on_event("startup")
@@ -308,7 +324,9 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         
         # [核心修复]：在恢复前创建临时备份，以便在恢复失败时能够回滚
         temp_backup_dir = os.path.join(data_dir, "temp_backup")
-        if os.path.exists(data_dir):
+        create_temp_backup = str(env_vars.get("CREATE_TEMP_BACKUP", "true")).lower() == "true"
+        
+        if create_temp_backup and os.path.exists(data_dir):
             print("正在创建恢复前的临时备份...")
             os.makedirs(temp_backup_dir, exist_ok=True)
             # 备份数据目录中的所有文件
@@ -320,6 +338,8 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
                 elif item != "temp_backup" and os.path.isfile(item_path):
                     shutil.copy2(item_path, os.path.join(temp_backup_dir, item))
             print("✅ 临时备份创建成功")
+        else:
+            print("⚠️ 跳过临时备份创建")
         
         # 解压恢复
         backup_dir = env_vars.get("BACKUP_DIR", "/backup")
@@ -441,7 +461,9 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         print(f"恢复失败: {e}")
         # 尝试回滚到临时备份
         temp_backup_dir = os.path.join(data_dir, "temp_backup")
-        if os.path.exists(temp_backup_dir):
+        create_temp_backup = str(env_vars.get("CREATE_TEMP_BACKUP", "true")).lower() == "true"
+        
+        if create_temp_backup and os.path.exists(temp_backup_dir):
             print("正在回滚到恢复前的状态...")
             try:
                 import shutil
@@ -465,6 +487,8 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
                 print("✅ 回滚成功，系统已恢复到恢复前的状态")
             except Exception as rollback_error:
                 print(f"回滚失败: {rollback_error}")
+        else:
+            print("⚠️ 未创建临时备份，跳过回滚")
         return templates.TemplateResponse(request=request, name="error.html", context={
             "request": request,
             "error": f"恢复失败: {e}"
@@ -473,7 +497,13 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
 # 执行备份
 @app.post("/do_backup", dependencies=[Depends(verify_auth)])
 async def do_backup(request: Request, background_tasks: BackgroundTasks):
+    global is_backup_running
     try:
+        # 检查是否有备份任务正在执行
+        if is_backup_running:
+            # 重定向到主页，显示备份正在执行的提示
+            return RedirectResponse("/?message=备份任务正在执行，请稍后再试", status_code=303)
+        
         # 添加后台任务
         background_tasks.add_task(run_backup_script)
         # 立即返回，避免网页卡顿
