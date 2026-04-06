@@ -312,12 +312,12 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         
         # 停止 Vaultwarden 容器
         if client:
-            # 这里的过滤器可能会抓到包含 vaultwarden 名字的所有容器（包括 backup 自己）
+            # 查找 Vaultwarden 容器
             all_found = client.containers.list(filters={"name": "vaultwarden"})
             # 获取当前容器的短 ID (HOSTNAME)
             current_id = os.environ.get("HOSTNAME", "")
-            # 修正：使用 startswith 进行安全排除
-            vaultwarden_containers = [c for c in all_found if c.name == "vaultwarden" and not c.id.startswith(current_id)]
+            # 修正：使用包含匹配，支持 Docker Compose 自动生成的容器名称
+            vaultwarden_containers = [c for c in all_found if "vaultwarden" in c.name and not c.id.startswith(current_id)]
             
             for container in vaultwarden_containers:
                 container.stop()
@@ -373,6 +373,15 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
                 print(f"找到 SQLite 备份文件: {temp_db_file}")
                 # 目标数据库文件路径
                 target_db_file = os.path.join(data_dir, "db.sqlite3")
+                
+                # 清理 SQLite WAL 和 SHM 文件，避免数据不一致
+                wal_file = target_db_file + "-wal"
+                shm_file = target_db_file + "-shm"
+                for file in [wal_file, shm_file]:
+                    if os.path.exists(file):
+                        os.remove(file)
+                        print(f"✅ 已清理 SQLite 日志文件: {file}")
+                
                 # 重命名临时文件为正式数据库文件
                 os.replace(temp_db_file, target_db_file)
                 print(f"✅ 已将 SQLite 备份文件重命名为: {target_db_file}")
