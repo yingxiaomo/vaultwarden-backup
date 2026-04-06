@@ -84,21 +84,83 @@ def get_env_vars():
                 with open(CONFIG_FILE, "r", encoding="utf-8") as f_in:
                     env_vars = yaml.safe_load(f_in)
         else:
-            # 如果 example 也不存在，从 env.sh 中提取
-            if os.path.exists(ENV_FILE):
-                with open(ENV_FILE, "r") as f:
-                    for line in f:
-                        if line.startswith("export "):
-                            key, value = line.strip().split("=", 1)
-                            key = key[7:]
-                            if value.startswith('"') and value.endswith('"') or value.startswith("'") and value.endswith("'"):
-                                value = value[1:-1]
-                            env_vars[key] = value
+            # 如果 example 也不存在，创建一个带有完整注释的配置文件
+            config_content = """# Vaultwarden 备份配置文件
+# 请根据实际情况修改以下配置
+
+# 数据库类型 (sqlite, mysql, postgres)
+DB_TYPE: sqlite
+
+# MySQL 数据库配置（仅当 DB_TYPE=mysql 时使用）
+DB_HOST: db
+DB_PORT: '3306'
+DB_USER: vaultwarden
+DB_NAME: vaultwarden
+
+# PostgreSQL 数据库配置（仅当 DB_TYPE=postgres 时使用）
+PG_HOST: db
+PG_PORT: '5432'
+PG_USER: vaultwarden
+PG_DB: vaultwarden
+
+# 压缩包 AES 加密密码（可选，如果不设置则进行非加密打包）
+# ZIP_PASSWORD: your_secure_zip_password
+
+# 备份文件前缀（默认 vaultwarden_backup）
+BACKUP_PREFIX: vaultwarden_backup
+
+# 备份目录
+BACKUP_DIR: /backup
+
+# 数据目录
+DATA_DIR: /vw_data
+
+# 定时任务执行计划（Cron 表达式）
+# 格式：分 时 日 月 周
+# 示例：0 2 * * * （每天凌晨 2 点）
+CRON_SCHEDULE: 0 2 * * *
+
+# 启动时执行备份（true/false）
+RUN_ON_STARTUP: 'true'
+
+# 本地备份保留天数
+LOCAL_BACKUP_KEEP_DAYS: '15'
+
+# 远端备份保留天数（可选，如果不设置则不清理）
+# RCLONE_KEEP_DAYS: '15'
+
+# Rclone 远程存储配置
+# 格式：remote_name:path
+# 示例：my_onedrive:/vaultwarden_backup
+# RCLONE_REMOTE: my_onedrive:/vaultwarden_backup
+
+# Apprise 通知配置
+# 方式 1: 直接配置通知 URL
+# APPRISE_URL: tgram://bottoken/ChatID
+
+# 方式 2: 使用独立的 Apprise 服务 API
+# APPRISE_API_URL: http://apprise:8000
+
+# 时区配置
+TZ: Asia/Shanghai
+
+# HTTP 代理配置（可选）
+# HTTP_PROXY: http://192.168.1.100:7890
+# HTTPS_PROXY: http://192.168.1.100:7890
+# ALL_PROXY: socks5://192.168.1.100:7890
+
+# Web 面板账号密码
+WEB_USER: admin
+WEB_PASS: admin"""
             
-            # 第一次运行，把读取到的默认值保存为 YAML
+            # 保存到 config.yaml
             os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
             with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-                yaml.dump(env_vars, f, default_flow_style=False, allow_unicode=True, indent=2)
+                f.write(config_content)
+            
+            # 然后重新读取解析为字典
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f_in:
+                env_vars = yaml.safe_load(f_in)
     
     return env_vars
 
@@ -159,6 +221,13 @@ async def config(request: Request):
     if os.path.exists(config_file_path):
         with open(config_file_path, "r", encoding="utf-8") as f:
             config_content = f.read()
+        
+        # 检查配置文件是否包含注释
+        if "#" not in config_content:
+            # 如果没有注释，重新初始化配置文件
+            get_env_vars()
+            with open(config_file_path, "r", encoding="utf-8") as f:
+                config_content = f.read()
     else:
         # 如果文件还不存在，触发一下初始化再读取
         get_env_vars()
