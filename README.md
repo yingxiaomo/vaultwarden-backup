@@ -129,7 +129,7 @@ http://localhost:9876
 
 #### 4.3 config.yaml 示例
 
-完整的配置示例请参考项目根目录下的 `config.yaml.example` 文件，该文件包含所有可用的配置项和详细说明。
+完整的配置示例请参考 [config.yaml.example](config.yaml.example) 文件，该文件包含所有可用的配置项和详细说明。
 
 ## ⚙️ 环境变量说明 (Environment Variables)
 
