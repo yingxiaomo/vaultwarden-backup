@@ -87,7 +87,7 @@ services:
       - TZ=Asia/Shanghai
 
     ports:
-      - "8000:8000"  # Web 面板端口
+      - "9876:9876"  # Web 面板端口
     
     volumes:
       # 挂载 Vaultwarden 的数据目录 (只读挂载，保证数据安全)
