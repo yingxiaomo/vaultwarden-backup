@@ -97,8 +97,9 @@ if [ ! -w "$BACKUP_DIR" ]; then
 fi
 
 # 检查磁盘空间
-# 使用 df -m 以 MB 为单位输出，避免在 32 位系统上发生整数溢出
-FREE_SPACE_MB=$(df -m "$BACKUP_DIR" | tail -n 1 | awk '{print $4}')
+# 使用 df -Pm 以 MB 为单位输出，避免在 32 位系统上发生整数溢出
+# 逻辑：先锁定含有挂载点的那一行，提取倒数第三列，并强制剔除所有非数字字符
+FREE_SPACE_MB=$(df -Pm "$BACKUP_DIR" | awk '/^\// || /^[0-9]/ {print $(NF-2)}' | sed 's/[^0-9]//g')
 # 5GB 转换为 MB
 MIN_SPACE_MB=$((5 * 1024))
 
