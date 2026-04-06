@@ -24,6 +24,7 @@ COPY entrypoint.sh /app/entrypoint.sh
 COPY app.py /app/app.py
 COPY templates /app/templates
 COPY static /app/static
+COPY config.yaml.example /app/config.yaml.example
 
 RUN chmod +x /app/backup.sh /app/entrypoint.sh
 

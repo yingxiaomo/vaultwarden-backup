@@ -55,22 +55,36 @@ def get_env_vars():
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             env_vars = yaml.safe_load(f)
     else:
-        # 如果没有，从现有的 env.sh 或者 os.environ 中提取默认值
+        # 如果没有，从 config.yaml.example 中读取带注释的配置
         env_vars = {}
-        if os.path.exists(ENV_FILE):
-            with open(ENV_FILE, "r") as f:
-                for line in f:
-                    if line.startswith("export "):
-                        key, value = line.strip().split("=", 1)
-                        key = key[7:]
-                        if value.startswith('"') and value.endswith('"') or value.startswith("'") and value.endswith("'"):
-                            value = value[1:-1]
-                        env_vars[key] = value
-        
-        # 第一次运行，把读取到的默认值保存为 YAML
-        os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
-        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-            yaml.dump(env_vars, f, default_flow_style=False, allow_unicode=True, indent=2)
+        example_config = "/app/config.yaml.example"
+        if os.path.exists(example_config):
+            with open(example_config, "r", encoding="utf-8") as f:
+                # 读取文件内容，保留注释
+                config_content = f.read()
+                # 保存到 config.yaml
+                os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
+                with open(CONFIG_FILE, "w", encoding="utf-8") as f_out:
+                    f_out.write(config_content)
+                # 然后重新读取解析为字典
+                with open(CONFIG_FILE, "r", encoding="utf-8") as f_in:
+                    env_vars = yaml.safe_load(f_in)
+        else:
+            # 如果 example 也不存在，从 env.sh 中提取
+            if os.path.exists(ENV_FILE):
+                with open(ENV_FILE, "r") as f:
+                    for line in f:
+                        if line.startswith("export "):
+                            key, value = line.strip().split("=", 1)
+                            key = key[7:]
+                            if value.startswith('"') and value.endswith('"') or value.startswith("'") and value.endswith("'"):
+                                value = value[1:-1]
+                            env_vars[key] = value
+            
+            # 第一次运行，把读取到的默认值保存为 YAML
+            os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
+            with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+                yaml.dump(env_vars, f, default_flow_style=False, allow_unicode=True, indent=2)
     
     # 确保 Web 面板的账号密码始终在字典里，以便前端渲染
     if "WEB_USER" not in env_vars:
@@ -220,6 +234,11 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         # 获取最新的环境变量
         env_vars = get_env_vars()
         
+        # 检查数据目录是否存在
+        data_dir = env_vars.get("DATA_DIR", "/vw_data")
+        if not os.path.exists(data_dir):
+            raise Exception(f"数据目录 {data_dir} 不存在，请检查挂载是否正确")
+        
         # 停止 Vaultwarden 容器
         if client:
             vaultwarden_containers = client.containers.list(filters={"name": "vaultwarden"})
@@ -230,7 +249,6 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         # 解压恢复
         backup_dir = env_vars.get("BACKUP_DIR", "/backup")
         backup_path = os.path.join(backup_dir, backup_file)
-        data_dir = env_vars.get("DATA_DIR", "/vw_data")
         
         # 使用列表形式调用，彻底杜绝空格和特殊字符引起的 Bug
         if env_vars.get("ZIP_PASSWORD"):
