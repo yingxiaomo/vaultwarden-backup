@@ -6,20 +6,49 @@ import subprocess
 import re
 
 # 配置文件路径
-CONFIG_FILE = "/app/config/config.yaml"
-ENV_FILE = "/app/env.sh"
+import os
+# 检查是否在 Docker 容器内（通过检查环境变量或文件路径）
+def is_docker():
+    """检测是否在 Docker 容器内"""
+    # 方法 1: 检查环境变量
+    if os.environ.get("DOCKER_CONTAINER") == "true":
+        return True
+    # 方法 2: 检查 /proc/1/cgroup 文件
+    try:
+        with open("/proc/1/cgroup", "r") as f:
+            return "docker" in f.read()
+    except:
+        pass
+    # 方法 3: 检查是否存在 .dockerenv 文件
+    if os.path.exists("/.dockerenv"):
+        return True
+    return False
+
+if is_docker():
+    # 在 Docker 容器内
+    CONFIG_FILE = "/app/config/config.yaml"
+    ENV_FILE = "/app/env.sh"
+else:
+    # 在本地开发环境
+    CONFIG_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "config.yaml")
+    ENV_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "env.sh")
 
 # 读取配置：优先读 config.yaml，如果没有则返回空配置
 def get_env_vars():
+    print(f"CONFIG_FILE: {CONFIG_FILE}")
+    print(f"CONFIG_FILE exists: {os.path.exists(CONFIG_FILE)}")
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-                return yaml.safe_load(f) or {}
+                config = yaml.safe_load(f) or {}
+                print(f"Config loaded: {config}")
+                return config
         except Exception as e:
             print(f"配置文件解析失败: {e}，将返回空配置")
             return {}
     
     # 如果不存在，返回空配置，触发初始化流程
+    print("Config file not found, returning empty config")
     return {}
 
 # 保存配置
