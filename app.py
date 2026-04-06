@@ -339,8 +339,27 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         print(f"已恢复备份: {backup_file}")
         
         # 处理 MySQL/PostgreSQL 的 SQL 文件导入
+        # 初始化变量，避免 UnboundLocalError
+        sql_file = None
+        
         db_type = env_vars.get("DB_TYPE", "sqlite").lower()
-        if db_type in ["mysql", "postgres"]:
+        
+        # 处理 SQLite 恢复：将临时备份文件改回 db.sqlite3
+        if db_type == "sqlite":
+            print("正在处理 SQLite 数据库恢复...")
+            # 查找解压后的临时 SQLite 文件
+            temp_db_file = os.path.join(data_dir, "db_dump_temp.db")
+            if os.path.exists(temp_db_file):
+                print(f"找到 SQLite 备份文件: {temp_db_file}")
+                # 目标数据库文件路径
+                target_db_file = os.path.join(data_dir, "db.sqlite3")
+                # 重命名临时文件为正式数据库文件
+                import os
+                os.replace(temp_db_file, target_db_file)
+                print(f"✅ 已将 SQLite 备份文件重命名为: {target_db_file}")
+            else:
+                print("⚠️ 未找到 SQLite 备份文件，跳过数据库恢复")
+        elif db_type in ["mysql", "postgres"]:
             print(f"正在处理 {db_type} 数据库恢复...")
             
             # 查找解压后的 SQL 文件（使用固定的临时文件名，避免匹配错误的旧文件）
