@@ -9,6 +9,7 @@ import datetime
 import docker
 import hashlib
 import shlex
+import json
 
 # 初始化 FastAPI 应用
 app = FastAPI()
@@ -106,8 +107,10 @@ WEB_PASS: admin"""
         if key in ["PATH", "HOSTNAME", "PWD", "HOME", "SHLVL", "TERM"]:
             continue
         if key.isupper():
-            safe_value = f"'{value}'" if ' ' in str(value) else value
-            # 寻找模板里对应的行（无论是否被 # 注释），将其激活并替换
+            # 同样使用 json.dumps，防止外部环境变量里含有特殊的 YAML 字符
+            import json
+            safe_value = json.dumps(value)
+            
             pattern = rf'^#?\s*({key}):.*$'
             if re.search(pattern, config_content, flags=re.MULTILINE):
                 config_content = re.sub(pattern, lambda _: f'{key}: {safe_value}', config_content, flags=re.MULTILINE)
@@ -289,7 +292,9 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         
         # 使用列表形式调用，彻底杜绝空格和特殊字符引起的 Bug
         if env_vars.get("ZIP_PASSWORD"):
-            unzip_cmd = ["unzip", "-P", env_vars["ZIP_PASSWORD"], "-o", backup_path, "-d", data_dir]
+            # 强制转换为字符串，防止纯数字密码导致 subprocess 崩溃！
+            zip_pwd = str(env_vars["ZIP_PASSWORD"])
+            unzip_cmd = ["unzip", "-P", zip_pwd, "-o", backup_path, "-d", data_dir]
         else:
             unzip_cmd = ["unzip", "-o", backup_path, "-d", data_dir]
         
@@ -363,14 +368,19 @@ async def do_setup(request: Request, username: str = Form(...), password: str = 
     with open(config_file_path, "r", encoding="utf-8") as f:
         config_content = f.read()
     
-    # 查找并替换 WEB_USER 和 WEB_PASS (兼容已被注释的情况)
+    # 查找并替换 WEB_USER 和 WEB_PASS
     import re
-    config_content = re.sub(r'^#?\s*WEB_USER:.*$', lambda _: f'WEB_USER: {username}', config_content, flags=re.MULTILINE)
-    config_content = re.sub(r'^#?\s*WEB_PASS:.*$', lambda _: f'WEB_PASS: {password}', config_content, flags=re.MULTILINE)
+    import json
     
-    # 如果模板里压根没这两行，追加到末尾
+    # 用 json.dumps 完美包裹字符串，变成 "Abcd@123#"，彻底杜绝 YAML 解析错误
+    safe_user = json.dumps(username)
+    safe_pass = json.dumps(password)
+    
+    config_content = re.sub(r'^#?\s*WEB_USER:.*$', lambda _: f'WEB_USER: {safe_user}', config_content, flags=re.MULTILINE)
+    config_content = re.sub(r'^#?\s*WEB_PASS:.*$', lambda _: f'WEB_PASS: {safe_pass}', config_content, flags=re.MULTILINE)
+    
     if 'WEB_USER:' not in config_content:
-        config_content += f'\n# Web 面板账号密码\nWEB_USER: {username}\nWEB_PASS: {password}\n'
+        config_content += f'\n# Web 面板账号密码\nWEB_USER: {safe_user}\nWEB_PASS: {safe_pass}\n'
     
     # 保存配置
     with open(config_file_path, "w", encoding="utf-8") as f:
