@@ -397,7 +397,8 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
                     if db_user and db_password and db_name:
                         print("正在导入 MySQL 数据库...")
                         # 1. 准备环境变量（最安全的方式）
-                        os.environ["MYSQL_PWD"] = db_password
+                        env = os.environ.copy()
+                        env["MYSQL_PWD"] = db_password
                         # 2. 构建纯列表命令（不使用 shell=True）
                         mysql_cmd = [
                             "mysql",
@@ -408,7 +409,7 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
                         ]
                         # 3. 使用 Python 的文件流处理重定向，避开 Shell 风险
                         with open(sql_file, "r") as f:
-                            subprocess.run(mysql_cmd, stdin=f, check=True) # 直接传入列表，不使用 shell=True
+                            subprocess.run(mysql_cmd, stdin=f, env=env, check=True) # 直接传入列表，不使用 shell=True
                         print("✅ MySQL 数据库导入成功")
                     else:
                         print("⚠️ MySQL 数据库信息不完整，跳过导入")
@@ -423,8 +424,9 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
                     
                     if db_user and db_password and db_name:
                         print("正在导入 PostgreSQL 数据库...")
-                        # 设置 PGPASSWORD 环境变量
-                        os.environ["PGPASSWORD"] = db_password
+                        # 准备环境变量（最安全的方式）
+                        env = os.environ.copy()
+                        env["PGPASSWORD"] = db_password
                         # 使用 psql 命令导入 SQL 文件
                         psql_cmd = [
                             "psql",
@@ -435,7 +437,7 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
                             "-f",
                             sql_file
                         ]
-                        subprocess.run(psql_cmd, check=True)
+                        subprocess.run(psql_cmd, env=env, check=True)
                         print("✅ PostgreSQL 数据库导入成功")
                     else:
                         print("⚠️ PostgreSQL 数据库信息不完整，跳过导入")
@@ -472,14 +474,12 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
                         shutil.rmtree(item_path)
                     elif item != "temp_backup" and os.path.isfile(item_path):
                         os.remove(item_path)
-                # 从临时备份恢复
+                # 从临时备份恢复（使用移动操作，避免磁盘空间不足的问题）
                 for item in os.listdir(temp_backup_dir):
                     item_path = os.path.join(temp_backup_dir, item)
                     dest_path = os.path.join(data_dir, item)
-                    if os.path.isdir(item_path):
-                        shutil.copytree(item_path, dest_path)
-                    else:
-                        shutil.copy2(item_path, dest_path)
+                    # 使用移动操作，同一分区内是原子且不占额外空间的
+                    shutil.move(item_path, dest_path)
                 # 清理临时备份
                 shutil.rmtree(temp_backup_dir)
                 print("✅ 回滚成功，系统已恢复到恢复前的状态")
@@ -502,11 +502,16 @@ async def do_backup(request: Request, background_tasks: BackgroundTasks):
             # 重定向到主页，显示备份正在执行的提示
             return RedirectResponse("/?message=备份任务正在执行，请稍后再试", status_code=303)
         
+        # 核心修改：在这里立刻上锁！
+        is_backup_running = True
+        
         # 添加后台任务
         background_tasks.add_task(run_backup_script)
         # 立即返回，避免网页卡顿
         return RedirectResponse("/", status_code=303)
     except Exception as e:
+        # 如果出现异常，释放锁
+        is_backup_running = False
         print(f"备份失败: {e}")
         return templates.TemplateResponse(request=request, name="error.html", context={
             "request": request,
