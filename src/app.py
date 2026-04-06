@@ -23,7 +23,7 @@ from routes import auth_router, backup_router, config_router, restore_router, se
 from services import BackupService, RestoreService, ConfigService, AuthService
 
 # 导入工具模块
-from utils import get_vaultwarden_containers, get_file_size, get_file_mtime, run_shell_command
+from utils import run_shell_command
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

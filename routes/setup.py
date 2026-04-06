@@ -124,7 +124,7 @@ DB_NAME: {json.dumps(db_name or "")}
     # 强制刷新 Crontab
     import tempfile
     cron_schedule = env_vars.get("CRON_SCHEDULE", "0 2 * * *")
-    cron_cmd = f"{cron_schedule} . /app/env.sh && /app/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2\n"
+    cron_cmd = f"{cron_schedule} . /app/env.sh && /app/lib/scripts/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2\n"
     with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
         f.write(cron_cmd)
         temp_file_path = f.name

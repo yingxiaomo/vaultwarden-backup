@@ -1,9 +1,9 @@
 # 备份服务
 import os
-import datetime
 import subprocess
 
 from config import get_env_vars
+from utils.file import get_file_size, get_file_mtime
 
 class BackupService:
     """备份服务"""
@@ -21,12 +21,10 @@ class BackupService:
                 for file in files:
                     if file.endswith(".zip"):
                         file_path = os.path.join(backup_dir, file)
-                        stat = os.stat(file_path)
-                        size = os.path.getsize(file_path) / (1024 * 1024)  # 转换为 MB
                         backup_history.append({
                             "name": file,
-                            "size": f"{size:.2f} MB",
-                            "mtime": datetime.datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+                            "size": get_file_size(file_path),
+                            "mtime": get_file_mtime(file_path)
                         })
                 backup_history.sort(key=lambda x: x["mtime"], reverse=True)
         except Exception as e:

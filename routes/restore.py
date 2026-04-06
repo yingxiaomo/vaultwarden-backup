@@ -2,8 +2,7 @@
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-import os
-import datetime
+
 
 from config import get_env_vars
 from src.core import verify_auth
