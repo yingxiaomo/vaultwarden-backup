@@ -453,9 +453,16 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         # 清理临时备份
         temp_backup_dir = os.path.join(data_dir, "temp_backup")
         if os.path.exists(temp_backup_dir):
-            import shutil
             shutil.rmtree(temp_backup_dir)
             print("✅ 临时备份已清理")
+        
+        # 清理临时数据库文件
+        temp_db_files = ["db_dump_temp.db", "db_dump_temp.sql"]
+        for temp_file in temp_db_files:
+            temp_file_path = os.path.join(data_dir, temp_file)
+            if os.path.exists(temp_file_path):
+                os.remove(temp_file_path)
+                print(f"✅ 临时文件已清理: {temp_file}")
         
         return RedirectResponse("/", status_code=303)
     except Exception as e:
