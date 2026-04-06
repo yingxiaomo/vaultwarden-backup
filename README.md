@@ -97,7 +97,7 @@ services:
       - ./vw_data:/vw_data:ro
       - ./backups:/backup
       - ./rclone_config:/config/rclone/
-      - ./env.sh:/app/env.sh  # 用于持久化 Web 面板配置
+      - ./config:/app/config  # 用于持久化 Web 面板配置（config.json）
       - /var/run/docker.sock:/var/run/docker.sock
 ```
 
@@ -111,10 +111,11 @@ http://localhost:9876
 
 #### 4.3 配置说明
 
-1. **首次访问**：容器启动时会自动初始化一个空的配置文件，Web 面板会显示默认配置。
-2. **修改配置**：在 Web 面板中修改配置后，点击 "保存配置" 按钮，配置会自动保存到 `./env.sh` 文件中。
-3. **持久化**：由于配置文件被映射到宿主机的 `./env.sh` 文件，即使容器重启，配置也会永久保存。
-4. **一键操作**：Web 面板支持一键执行备份和恢复操作，方便快捷。
+1. **首次访问**：容器启动时会自动在 `./config` 目录中初始化 `config.json` 文件，Web 面板会显示默认配置。
+2. **修改配置**：在 Web 面板中修改配置后，点击 "保存配置" 按钮，配置会自动保存到 `./config/config.json` 文件中。
+3. **持久化**：由于配置文件被映射到宿主机的 `./config` 目录，即使容器重启，配置也会永久保存。
+4. **配置迁移**：只需拷贝 `./config` 目录，即可在不同机器间快速迁移配置。
+5. **一键操作**：Web 面板支持一键执行备份和恢复操作，方便快捷。
 
 ## ⚙️ 环境变量说明 (Environment Variables)
 

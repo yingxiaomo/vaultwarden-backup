@@ -24,22 +24,46 @@ except Exception as e:
     print(f"Docker 连接失败: {e}")
     client = None
 
-# 读取环境变量
+import json
+
+CONFIG_FILE = "/app/config/config.json"
+ENV_FILE = "/app/env.sh"
+
+# 读取配置：优先读 config.json，如果没有则尝试从系统的环境变量中初始化一份默认值
 def get_env_vars():
+    # 如果有 config.json，直接读取
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r") as f:
+            return json.load(f)
+            
+    # 如果没有，从现有的 env.sh 或者 os.environ 中提取默认值，并创建 config.json
     env_vars = {}
-    with open("/app/env.sh", "r") as f:
-        for line in f:
-            if line.startswith("export "):
-                key, value = line.strip().split("=", 1)
-                key = key[7:]  # 移除 "export "
-                if value.startswith('"') and value.endswith('"'):
-                    value = value[1:-1]  # 移除引号
-                env_vars[key] = value
+    if os.path.exists(ENV_FILE):
+        with open(ENV_FILE, "r") as f:
+            for line in f:
+                if line.startswith("export "):
+                    key, value = line.strip().split("=", 1)
+                    key = key[7:]
+                    if value.startswith('"') and value.endswith('"') or value.startswith("'") and value.endswith("'"):
+                        value = value[1:-1]
+                    env_vars[key] = value
+    
+    # 第一次运行，把读取到的默认值保存为 JSON
+    os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(env_vars, f, indent=4)
+        
     return env_vars
 
-# 保存环境变量
+# 保存配置：同时保存为 JSON 和 Shell 脚本
 def save_env_vars(env_vars):
-    with open("/app/env.sh", "w") as f:
+    # 1. 保存结构化的 config.json (Web 面板使用)
+    os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(env_vars, f, indent=4)
+        
+    # 2. 同步生成 env.sh (底层 Bash 脚本使用)
+    with open(ENV_FILE, "w") as f:
         for key, value in env_vars.items():
             f.write(f"export {key}='{value}'\n")
 
