@@ -16,8 +16,13 @@ echo "Vaultwarden 备份容器已启动"
 echo "Cron 执行计划: $CRON_SCHEDULE"
 echo "=================================================="
 
-# 将当前所有环境变量导出，并兼容 Alpine 的 sh 解析
-export -p | grep -v "no_proxy" | sed 's/declare -x/export/g' > /app/env.sh
+# 判断：如果 env.sh 不存在，或者它是个空文件，才去初始化它
+if [ ! -s /app/env.sh ]; then
+    echo "初始化环境变量配置文件..."
+    export -p | grep -v "no_proxy" | sed 's/declare -x/export/g' > /app/env.sh
+else
+    echo "检测到已有的配置，跳过初始化，保留 Web 面板的设置。"
+fi
 
 # 在 crontab 里先 source 环境变量，再执行备份脚本
 echo "$CRON_SCHEDULE . /app/env.sh && /app/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2" | crontab -
