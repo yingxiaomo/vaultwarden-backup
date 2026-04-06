@@ -64,7 +64,28 @@
 
 #### 2.2 推荐方式：通过 Web 面板配置（极简版）
 
-适用于喜欢通过可视化界面配置的用户，只需保留必要的挂载。您可以基于 [docker-compose.yml](docker-compose.yml) 文件进行简化，只保留核心挂载项。
+适用于喜欢通过可视化界面配置的用户，只需保留必要的挂载：
+
+```yaml
+version: '3.8'
+
+services:
+  vaultwarden-backup:
+    image: yingxiaomo/vaultwarden-backup:latest
+    container_name: vaultwarden_backup
+    restart: on-failure
+    
+    ports:
+      - "9876:9876"  # Web 访问端口
+    
+    volumes:
+      # 物理文件的挂载必须保留
+      - ./vw_data:/vw_data:ro
+      - ./backups:/backup
+      - ./rclone_config:/config/rclone/
+      - ./config:/app/config  # 用于持久化 Web 面板配置（config.yaml）
+      - /var/run/docker.sock:/var/run/docker.sock
+```
 
 ### 3. 启动服务
 
