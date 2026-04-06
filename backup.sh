@@ -114,7 +114,8 @@ fi
 
 # 检查磁盘空间
 # 使用 df -Pm 以 MB 为单位输出，-P 参数确保 POSIX 标准格式，避免路径太长导致换行
-FREE_SPACE_MB=$(df -Pm "$BACKUP_DIR" | tail -n 1 | awk '{print $4}' | tr -d '%')
+# 检查备份目录所在分区的可用空间
+FREE_SPACE_MB=$(df -Pm "$BACKUP_DIR" | awk 'END{print $(NF-2)}' | tr -d '%')
 # 5GB 转换为 MB
 MIN_SPACE_MB=$((5 * 1024))
 

@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, Form, Depends, BackgroundTasks, HTTPExcept
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from contextlib import asynccontextmanager
 import subprocess
 import os
 import yaml
@@ -14,8 +15,35 @@ import re
 import glob
 import shutil
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # --- 冷启动配置同步逻辑 ---
+    print("🚀 正在执行冷启动配置同步...")
+    env_vars = get_env_vars()
+    
+    # 同步 env.sh
+    os.makedirs(os.path.dirname(ENV_FILE), exist_ok=True)
+    with open(ENV_FILE, "w", encoding="utf-8") as f:
+        for key, value in env_vars.items():
+            if value is not None:
+                safe_val = shlex.quote(str(value))
+                f.write(f"export {key}={safe_val}\n")
+    
+    # 强制刷新 Crontab
+    cron_schedule = env_vars.get("CRON_SCHEDULE", "0 2 * * *")
+    cron_cmd = f"{cron_schedule} . /app/env.sh && /app/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2\n"
+    with open("/tmp/crontab.txt", "w") as f:
+        f.write(cron_cmd)
+    subprocess.run(["crontab", "/tmp/crontab.txt"])
+    print("✅ 配置同步完成！底层守护进程已就绪。")
+    
+    # 注意：这里我们移除了 app.py 里的 Popen 启动备份，
+    # 统一交给 entrypoint.sh 处理，防止跑两遍！
+    
+    yield # 应用运行
+
 # 初始化 FastAPI 应用
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 # 挂载静态文件目录
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -149,34 +177,6 @@ def run_backup_script():
         is_backup_running = False
         print("🔓 备份任务锁已释放")
 
-# 容器冷启动初始化事件
-@app.on_event("startup")
-async def startup_event():
-    print("🚀 正在执行冷启动配置同步...")
-    env_vars = get_env_vars()
-    
-    # 强制将读取到的变量同步到底层的 env.sh
-    os.makedirs(os.path.dirname(ENV_FILE), exist_ok=True)
-    with open(ENV_FILE, "w", encoding="utf-8") as f:
-        for key, value in env_vars.items():
-            if value is not None:
-                # 使用 shlex.quote，不用我们自己再加单引号了，它会自动处理所有特殊符号！
-                safe_val = shlex.quote(str(value))
-                f.write(f"export {key}={safe_val}\n")
-    
-    # 强制刷新一次底层 Linux 的 Crontab 定时任务
-    cron_schedule = env_vars.get("CRON_SCHEDULE", "0 2 * * *")
-    cron_cmd = f"{cron_schedule} . /app/env.sh && /app/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2\n"
-    with open("/tmp/crontab.txt", "w") as f:
-        f.write(cron_cmd)
-    subprocess.run(["crontab", "/tmp/crontab.txt"])
-    print("✅ 配置同步完成！底层守护进程已就绪。")
-    
-    # [核心修复]：直接在 Python 层面可靠地触发启动备份
-    if str(env_vars.get("RUN_ON_STARTUP", "")).lower() == "true":
-        print("🚀 检测到启动即备份，正在触发首次备份任务...")
-        # 这里不需要 await，直接丢进后台运行，不阻塞面板启动
-        subprocess.Popen(["/bin/bash", "-c", "source /app/env.sh && /app/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2"])
 
 # 主页面
 @app.get("/", response_class=HTMLResponse, dependencies=[Depends(verify_auth)])
