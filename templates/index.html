@@ -6,45 +6,228 @@
     <title>Vaultwarden 备份管理</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #343a40;
+            --secondary-color: #495057;
+            --accent-color: #0d6efd;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --success-color: #198754;
+            --info-color: #0dcaf0;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+        
         body {
-            background-color: #f8f9fa;
+            background-color: var(--light-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .card {
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+        
+        .container {
+            max-width: 1200px;
         }
-        .card-header {
-            background-color: #343a40;
+        
+        .header {
+            margin-bottom: 2rem;
+        }
+        
+        .header h1 {
+            font-weight: 700;
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            color: var(--secondary-color);
+            font-size: 1.1rem;
+        }
+        
+        .nav-pills {
+            margin-bottom: 2rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 0.25rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .nav-pills .nav-link {
+            color: var(--secondary-color);
+            border-radius: 0.375rem;
+            padding: 0.75rem 1.5rem;
+            margin: 0 0.25rem;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-pills .nav-link:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .nav-pills .nav-link.active {
+            background-color: var(--primary-color);
             color: white;
         }
+        
+        .card {
+            border: none;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 0.75rem 0.75rem 0 0;
+            padding: 1rem 1.5rem;
+        }
+        
+        .card-header h5 {
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-header h5 i {
+            margin-right: 0.5rem;
+        }
+        
+        .card-body {
+            padding: 1.5rem;
+        }
+        
+        .btn {
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
         .btn-primary {
-            background-color: #343a40;
-            border-color: #343a40;
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
         }
+        
         .btn-primary:hover {
-            background-color: #23272b;
-            border-color: #23272b;
+            background-color: #0b5ed7;
+            border-color: #0a58ca;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
         }
-        .nav-link {
-            color: #343a40;
+        
+        .btn-block {
+            width: 100%;
         }
-        .nav-link.active {
-            color: white !important;
-            background-color: #343a40 !important;
+        
+        .table {
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
-        .table-hover tbody tr:hover {
-            background-color: #e9ecef;
+        
+        .table thead {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .table thead th {
+            font-weight: 600;
+            padding: 1rem;
+            text-align: left;
+        }
+        
+        .table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+        
+        .table tbody tr:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .table tbody td {
+            padding: 0.75rem 1rem;
+        }
+        
+        .logs-container {
+            background-color: var(--dark-color);
+            color: #e9ecef;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        .logs-container pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        /* 自定义滚动条 */
+        .logs-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .logs-container::-webkit-scrollbar-track {
+            background: #333;
+            border-radius: 4px;
+        }
+        
+        .logs-container::-webkit-scrollbar-thumb {
+            background: #666;
+            border-radius: 4px;
+        }
+        
+        .logs-container::-webkit-scrollbar-thumb:hover {
+            background: #888;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .nav-pills {
+                flex-direction: column;
+            }
+            
+            .nav-pills .nav-link {
+                margin: 0.25rem 0;
+                text-align: center;
+            }
+            
+            .card {
+                margin-bottom: 1rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container mt-4">
-        <h1 class="mb-4">Vaultwarden 备份管理</h1>
+    <div class="container mt-5">
+        <div class="header">
+            <h1>Vaultwarden 备份管理</h1>
+            <p>安全、可靠的密码库备份解决方案</p>
+        </div>
         
-        <nav class="nav nav-pills mb-4">
-            <a class="nav-link active" href="/">仪表盘</a>
-            <a class="nav-link" href="/config">配置</a>
-            <a class="nav-link" href="/restore">恢复</a>
+        <nav class="nav nav-pills">
+            <a class="nav-link active" href="/">
+                <i class="bi bi-speedometer2"></i> 仪表盘
+            </a>
+            <a class="nav-link" href="/config">
+                <i class="bi bi-gear"></i> 配置
+            </a>
+            <a class="nav-link" href="/restore">
+                <i class="bi bi-arrow-counterclockwise"></i> 恢复
+            </a>
+            <a class="nav-link" href="/logout" style="margin-left: auto;">
+                <i class="bi bi-box-arrow-right"></i> 登出
+            </a>
         </nav>
         
         <div class="row">
@@ -52,11 +235,13 @@
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title">操作</h5>
+                        <h5><i class="bi bi-play-circle"></i> 快捷操作</h5>
                     </div>
                     <div class="card-body">
                         <form action="/do_backup" method="post">
-                            <button type="submit" class="btn btn-primary btn-block">执行备份</button>
+                            <button type="submit" class="btn btn-primary btn-block">
+                                <i class="bi bi-cloud-upload"></i> 执行备份
+                            </button>
                         </form>
                     </div>
                 </div>
@@ -66,7 +251,7 @@
         <!-- 备份历史 -->
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title">备份历史</h5>
+                <h5><i class="bi bi-clock-history"></i> 备份历史</h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -95,10 +280,10 @@
         <!-- 备份日志 -->
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title">备份日志</h5>
+                <h5><i class="bi bi-terminal"></i> 备份日志</h5>
             </div>
             <div class="card-body">
-                <div class="bg-dark text-light p-3 rounded" style="height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+                <div class="logs-container">
                     <pre id="backup-logs">加载中...</pre>
                 </div>
             </div>
@@ -106,6 +291,7 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.min.js"></script>
     <script>
         // 加载备份日志
         function loadLogs() {

@@ -6,31 +6,162 @@
     <title>Vaultwarden 备份管理 - 初始化</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #212529; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .setup-card { background-color: #343a40; color: white; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); width: 100%; max-width: 450px; padding: 2rem; border: 1px solid #495057; }
-        .form-control { background-color: #2b3035; border-color: #495057; color: white; }
-        .form-control:focus { background-color: #2b3035; color: white; border-color: #0d6efd; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25); }
-        .btn-primary { padding: 0.6rem; font-weight: bold; border-radius: 8px; }
+        :root {
+            --primary-color: #343a40;
+            --secondary-color: #495057;
+            --accent-color: #0d6efd;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --success-color: #198754;
+            --info-color: #0dcaf0;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+        
+        body {
+            background-color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-image: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        }
+        
+        .setup-container {
+            width: 100%;
+            max-width: 500px;
+            padding: 2rem;
+        }
+        
+        .setup-card {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            padding: 2.5rem;
+            border: 1px solid var(--secondary-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .setup-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        .setup-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .setup-header h2 {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .setup-header h2 i {
+            margin-right: 0.5rem;
+            color: var(--accent-color);
+        }
+        
+        .setup-header p {
+            color: #adb5bd;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .setup-header .text-light {
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #adb5bd;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            background-color: #2b3035;
+            border-color: var(--secondary-color);
+            color: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            background-color: #2b3035;
+            color: white;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+        
+        .btn {
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            border-color: #0a58ca;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .setup-container {
+                padding: 1rem;
+            }
+            
+            .setup-card {
+                padding: 2rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="setup-card">
-        <div class="text-center mb-4">
-            <h2 class="fw-bold">🚀 欢迎使用</h2>
-            <p class="text-secondary mt-2">初次启动 Vaultwarden Backup</p>
-            <p class="text-light" style="font-size: 0.9rem;">为了您的数据安全，请设置 Web 面板的管理员账号和密码。</p>
+    <div class="setup-container">
+        <div class="setup-card">
+            <div class="setup-header">
+                <h2><i class="bi bi-rocket-takeoff"></i> 欢迎使用</h2>
+                <p>初次启动 Vaultwarden Backup</p>
+                <p class="text-light">为了您的数据安全，请设置 Web 面板的管理员账号和密码。</p>
+            </div>
+            <form action="/do_setup" method="post">
+                <div class="form-group">
+                    <label>设置用户名</label>
+                    <input type="text" class="form-control" name="username" placeholder="请输入用户名" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>设置密码</label>
+                    <input type="password" class="form-control" name="password" placeholder="请输入强密码" required autocomplete="new-password">
+                </div>
+                <button type="submit" class="btn btn-primary w-100 fw-bold">
+                    <i class="bi bi-check-circle"></i> 完成初始化并进入面板
+                </button>
+            </form>
         </div>
-        <form action="/do_setup" method="post">
-            <div class="mb-3">
-                <label class="form-label text-secondary">设置用户名</label>
-                <input type="text" class="form-control" name="username" placeholder="请输入用户名" required autocomplete="off">
-            </div>
-            <div class="mb-4">
-                <label class="form-label text-secondary">设置密码</label>
-                <input type="password" class="form-control" name="password" placeholder="请输入强密码" required autocomplete="new-password">
-            </div>
-            <button type="submit" class="btn btn-primary w-100">完成初始化并进入面板</button>
-        </form>
     </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.min.js"></script>
 </body>
 </html>

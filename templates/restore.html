@@ -6,57 +6,213 @@
     <title>Vaultwarden 备份管理 - 恢复</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #343a40;
+            --secondary-color: #495057;
+            --accent-color: #0d6efd;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --success-color: #198754;
+            --info-color: #0dcaf0;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+        
         body {
-            background-color: #f8f9fa;
+            background-color: var(--light-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .card {
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+        
+        .container {
+            max-width: 1200px;
         }
-        .card-header {
-            background-color: #343a40;
+        
+        .header {
+            margin-bottom: 2rem;
+        }
+        
+        .header h1 {
+            font-weight: 700;
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            color: var(--secondary-color);
+            font-size: 1.1rem;
+        }
+        
+        .nav-pills {
+            margin-bottom: 2rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 0.25rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .nav-pills .nav-link {
+            color: var(--secondary-color);
+            border-radius: 0.375rem;
+            padding: 0.75rem 1.5rem;
+            margin: 0 0.25rem;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-pills .nav-link:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .nav-pills .nav-link.active {
+            background-color: var(--primary-color);
             color: white;
         }
-        .btn-primary {
-            background-color: #343a40;
-            border-color: #343a40;
+        
+        .card {
+            border: none;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-        .btn-primary:hover {
-            background-color: #23272b;
-            border-color: #23272b;
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
         }
-        .nav-link {
-            color: #343a40;
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 0.75rem 0.75rem 0 0;
+            padding: 1rem 1.5rem;
         }
-        .nav-link.active {
-            color: white !important;
-            background-color: #343a40 !important;
+        
+        .card-header h5 {
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
         }
-        .table-hover tbody tr:hover {
-            background-color: #e9ecef;
+        
+        .card-header h5 i {
+            margin-right: 0.5rem;
         }
+        
+        .card-body {
+            padding: 1.5rem;
+        }
+        
         .alert {
-            margin-top: 20px;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .table {
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .table thead {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .table thead th {
+            font-weight: 600;
+            padding: 1rem;
+            text-align: left;
+        }
+        
+        .table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+        
+        .table tbody tr:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .table tbody td {
+            padding: 0.75rem 1rem;
+        }
+        
+        .btn {
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+        
+        .btn-danger:hover {
+            background-color: #bb2d3b;
+            border-color: #b02a37;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .nav-pills {
+                flex-direction: column;
+            }
+            
+            .nav-pills .nav-link {
+                margin: 0.25rem 0;
+                text-align: center;
+            }
+            
+            .card {
+                margin-bottom: 1rem;
+            }
+            
+            .table {
+                font-size: 0.9rem;
+            }
+            
+            .table thead th {
+                padding: 0.75rem;
+            }
+            
+            .table tbody td {
+                padding: 0.5rem 0.75rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container mt-4">
-        <h1 class="mb-4">Vaultwarden 备份管理</h1>
+    <div class="container mt-5">
+        <div class="header">
+            <h1>Vaultwarden 备份管理</h1>
+            <p>安全、可靠的密码库备份解决方案</p>
+        </div>
         
-        <nav class="nav nav-pills mb-4">
-            <a class="nav-link" href="/">仪表盘</a>
-            <a class="nav-link" href="/config">配置</a>
-            <a class="nav-link active" href="/restore">恢复</a>
+        <nav class="nav nav-pills">
+            <a class="nav-link" href="/">
+                <i class="bi bi-speedometer2"></i> 仪表盘
+            </a>
+            <a class="nav-link" href="/config">
+                <i class="bi bi-gear"></i> 配置
+            </a>
+            <a class="nav-link active" href="/restore">
+                <i class="bi bi-arrow-counterclockwise"></i> 恢复
+            </a>
+            <a class="nav-link" href="/logout" style="margin-left: auto;">
+                <i class="bi bi-box-arrow-right"></i> 登出
+            </a>
         </nav>
         
         <div class="alert alert-warning" role="alert">
-            恢复操作会停止 Vaultwarden 容器，然后解压恢复备份文件，最后重新启动容器。请确保在恢复前已经停止对 Vaultwarden 的所有操作。
+            <strong>警告：</strong> 恢复操作会停止 Vaultwarden 容器，然后解压恢复备份文件，最后重新启动容器。请确保在恢复前已经停止对 Vaultwarden 的所有操作。
         </div>
         
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title">选择备份文件</h5>
+                <h5><i class="bi bi-arrow-counterclockwise"></i> 选择备份文件</h5>
             </div>
             <div class="card-body">
                 <form action="/do_restore" method="post">
@@ -82,12 +238,15 @@
                             </tbody>
                         </table>
                     </div>
-                    <button type="submit" class="btn btn-primary mt-4">执行恢复</button>
+                    <button type="submit" class="btn btn-danger w-100 fw-bold mt-4">
+                        <i class="bi bi-exclamation-triangle"></i> 执行恢复
+                    </button>
                 </form>
             </div>
         </div>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.min.js"></script>
 </body>
 </html>
