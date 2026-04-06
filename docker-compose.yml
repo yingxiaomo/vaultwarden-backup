@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   vaultwarden-backup:
-    # 使用你构建并推送到 Docker Hub 的镜像
-    image: yourusername/vaultwarden-backup:latest
+    # 使用官方镜像
+    image: yingxiaomo/vaultwarden-backup:latest
     container_name: vaultwarden_backup
     # 容器重启策略：失败时重启
     restart: on-failure
@@ -31,7 +31,7 @@ services:
       # Rclone 云端同步配置
       # ---------------------------------------------------------
       # Rclone 远程路径，格式为 "配置名称:路径" (需先配置好 rclone.conf)
-      - RCLONE_REMOTE=my_onedrive:/vaultwarden_backup
+      # - RCLONE_REMOTE=my_onedrive:/vaultwarden_backup
       
       # ---------------------------------------------------------
       # Apprise 通知配置 (用于备份成功/失败时的消息推送)
@@ -52,7 +52,7 @@ services:
       # - 企业微信:   wxtx://CorpID/CorpSecret/AgentID
       # - Server酱:   schan://SendKey
       # - 邮箱(SMTP): mailto://user:pass@domain.com
-      - APPRISE_URL=tgram://123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ/987654321
+      # - APPRISE_URL=tgram://123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ/987654321
       
       # 方式 2: 使用独立的 Apprise 服务 API
       # Apprise 服务 API 地址，例如 http://apprise:8000
@@ -91,7 +91,7 @@ services:
     
     volumes:
       # 挂载 Vaultwarden 的数据目录 (只读挂载，保证数据安全)
-      - /path/to/your/vw_data:/vw_data:ro
+      - ./vw_data:/vw_data:ro
       
       # 挂载本地备份目录，用于存放生成的加密压缩包
       - ./backups:/backup
