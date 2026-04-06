@@ -91,10 +91,10 @@ services:
     
     volumes:
       # 挂载 Vaultwarden 的数据目录 (只读挂载，保证数据安全)
-      - ./vw_data:/vw_data:ro
+      - ./data:/data:ro
       
       # 挂载本地备份目录，用于存放生成的加密压缩包
-      - ./backups:/backup
+      - ./backup:/backup
       
       # 【重要提醒】挂载 Rclone 配置文件目录
       # 强烈建议挂载整个目录 `./:/config/rclone/` 而不是单个文件 `rclone.conf`。

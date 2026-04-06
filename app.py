@@ -93,7 +93,7 @@ def create_default_config():
 DB_TYPE: sqlite
 BACKUP_PREFIX: vaultwarden_backup
 BACKUP_DIR: /backup
-DATA_DIR: /vw_data
+DATA_DIR: /data
 CRON_SCHEDULE: 0 2 * * *
 RUN_ON_STARTUP: 'true'
 LOCAL_BACKUP_KEEP_DAYS: '15'

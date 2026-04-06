@@ -20,7 +20,7 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 
 # 基础配置变量 (可通过环境变量覆盖)
 DB_TYPE="${DB_TYPE:-sqlite}"          # 数据库类型: sqlite, mysql, postgres
-DATA_DIR="${DATA_DIR:-/vw_data}"      # Vaultwarden 数据目录
+DATA_DIR="${DATA_DIR:-/data}"      # Vaultwarden 数据目录
 BACKUP_DIR="${BACKUP_DIR:-/backup}"   # 本地临时备份目录
 ZIP_PASSWORD="${ZIP_PASSWORD:-}"      # 压缩包加密密码
 APPRISE_URL="${APPRISE_URL:-}"        # Apprise 通知 URL
