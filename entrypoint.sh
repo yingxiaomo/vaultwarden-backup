@@ -18,7 +18,10 @@ echo "=================================================="
 
 echo "正在同步 Web 面板配置到底层运行环境..."
 # 让 Python 读取 config.yaml 并强制生成最新的 /app/env.sh
-python3 -c "from app import get_env_vars, save_env_vars; save_env_vars(get_env_vars())"
+# 直接使用 get_env_vars() 会触发配置初始化，然后通过 startup_event 生成 env.sh
+python3 -c "from app import get_env_vars; get_env_vars()"
+# 手动生成 env.sh
+python3 -c "from app import get_env_vars; env_vars = get_env_vars(); import os; f = open('/app/env.sh', 'w'); [f.write(f'export {k}={repr(v)}\n') for k, v in env_vars.items() if v is not None]; f.close()"
 
 # 在 crontab 里先 source 环境变量，再执行备份脚本
 echo "$CRON_SCHEDULE . /app/env.sh && /app/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2" | crontab -
