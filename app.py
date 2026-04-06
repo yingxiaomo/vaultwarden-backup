@@ -10,6 +10,7 @@ import docker
 import hashlib
 import shlex
 import json
+import re
 
 # 初始化 FastAPI 应用
 app = FastAPI()
@@ -96,7 +97,7 @@ LOCAL_BACKUP_KEEP_DAYS: '15'
 # RCLONE_KEEP_DAYS: '15'
 # RCLONE_REMOTE: my_onedrive:/vaultwarden_backup
 # APPRISE_URL: tgram://bottoken/ChatID
-# APPRISE_API_URL: `http://apprise:8000`
+# APPRISE_API_URL: http://apprise:8000
 TZ: Asia/Shanghai
 WEB_USER: admin
 WEB_PASS: admin"""
@@ -281,8 +282,10 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         if client:
             # 这里的过滤器可能会抓到包含 vaultwarden 名字的所有容器（包括 backup 自己）
             all_found = client.containers.list(filters={"name": "vaultwarden"})
-            # 过滤出真正的目标（精准匹配，且排除掉自己）
-            vaultwarden_containers = [c for c in all_found if c.name == "vaultwarden" and c.id != os.environ.get("HOSTNAME")]
+            # 获取当前容器的短 ID (HOSTNAME)
+            current_id = os.environ.get("HOSTNAME", "")
+            # 修正：使用 startswith 进行安全排除
+            vaultwarden_containers = [c for c in all_found if c.name == "vaultwarden" and not c.id.startswith(current_id)]
             
             for container in vaultwarden_containers:
                 container.stop()
