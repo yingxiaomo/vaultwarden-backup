@@ -2,7 +2,7 @@
 import os
 import subprocess
 
-from config import get_env_vars
+from app_config import get_env_vars
 from utils.file import get_file_size, get_file_mtime
 
 class BackupService:

@@ -53,6 +53,12 @@ check_disk_space() {
     # 检查备份目录所在分区的可用空间
     local free_space_mb=$(df -Pm "$dir" | awk 'END{print $(NF-2)}' | tr -d '%')
     
+    # 确保获取到的是有效数字，防止 df 失败导致 bash 报错
+    if ! [[ "$free_space_mb" =~ ^[0-9]+$ ]]; then
+        echo "警告: 无法获取目录 $dir 的磁盘空间信息，跳过空间检查。"
+        return 0
+    fi
+    
     if [ "$free_space_mb" -lt "$min_space_mb" ]; then
         # 获取剩余空间
         local human_free=$(df -h "$dir" | tail -n 1 | awk '{print $4}')

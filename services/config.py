@@ -2,7 +2,7 @@
 import os
 import yaml
 
-from config import get_env_vars, save_env_vars
+from app_config import get_env_vars, save_env_vars
 
 class ConfigService:
     """配置服务"""

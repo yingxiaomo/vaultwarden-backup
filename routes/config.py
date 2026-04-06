@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 import os
 import yaml
 
-from config import get_env_vars, save_env_vars
+from app_config import get_env_vars, save_env_vars
 from src.core import verify_auth
 
 # 初始化模板

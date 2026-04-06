@@ -1,7 +1,7 @@
 # 认证服务
 import hashlib
 
-from config import get_env_vars
+from app_config import get_env_vars
 
 class AuthService:
     """认证服务"""

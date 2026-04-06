@@ -21,6 +21,10 @@ RUN mkdir -p /app /vw_data /backup /config/rclone
 
 COPY lib /app/lib
 COPY src /app/src
+COPY app_config /app/app_config
+COPY routes /app/routes
+COPY services /app/services
+COPY utils /app/utils
 COPY templates /app/templates
 COPY static /app/static
 COPY config.yaml.example /app/config.yaml.example

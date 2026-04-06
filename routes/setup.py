@@ -7,7 +7,7 @@ import json
 import shlex
 import hashlib
 
-from config import get_env_vars
+from app_config import get_env_vars
 from utils import run_shell_command
 
 # 初始化模板

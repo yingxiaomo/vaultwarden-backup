@@ -44,8 +44,10 @@ BACKUP_DIR="${BACKUP_DIR:-/backup}"   # 本地临时备份目录
 ZIP_PASSWORD="${ZIP_PASSWORD:-}"      # 压缩包加密密码
 APPRISE_URL="${APPRISE_URL:-}"        # Apprise 通知 URL
 # 读取 API URL，并使用 %/ 自动移除末尾可能多余的斜杠，包容用户的书写习惯
+APPRISE_API_URL="${APPRISE_API_URL:-}"
 APPRISE_API_URL="${APPRISE_API_URL%/}"  # Apprise 服务 API 地址
 RCLONE_REMOTE="${RCLONE_REMOTE:-}"    # Rclone 远程路径，例如 myremote:/vaultwarden_backup
+RCLONE_KEEP_DAYS="${RCLONE_KEEP_DAYS:-}" # Rclone 远端保留天数
 
 # 时间戳，用于生成唯一的文件名
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")    # 格式: 年月日_时分秒
@@ -134,16 +136,26 @@ fi
 # 复制数据库文件到临时文件
 cp "$SQL_FILE" "$TEMP_SQL_FILE"
 
+# 构建排除参数
+EXCLUDE_ARGS=("-x" "db.sqlite3" "db_dump_temp.db" "db_dump_temp.sql")
+# 如果 BACKUP_DIR 在 DATA_DIR 内部，则排除 BACKUP_DIR，防止无限套娃
+if [[ "$BACKUP_DIR" == "$DATA_DIR"/* ]]; then
+    REL_BACKUP_DIR="${BACKUP_DIR#$DATA_DIR/}"
+    EXCLUDE_ARGS+=("${REL_BACKUP_DIR}/*" "${REL_BACKUP_DIR}")
+elif [[ "$BACKUP_DIR" == "$DATA_DIR" ]]; then
+    EXCLUDE_ARGS+=("${PREFIX}_*.zip")
+fi
+
 if [ -z "$ZIP_PASSWORD" ]; then
     # 非加密打包
-    # 精准排除数据库文件，避免误伤附件目录中的文件
-    zip -r -q "$ZIP_FILE" . -x "db.sqlite3" "db_dump_temp.db" "db_dump_temp.sql" # 打包当前目录，排除可能存在的旧备份
+    # 精准排除数据库文件和可能的备份目录，避免误伤附件目录中的文件
+    zip -r -q "$ZIP_FILE" . "${EXCLUDE_ARGS[@]}" # 打包当前目录，排除可能存在的旧备份
     echo "正在追加数据库备份..."
     zip -j -q "$ZIP_FILE" "$TEMP_SQL_FILE" # 使用 -j 仅针对数据库文件，使其位于压缩包根目录
 else
     # 加密打包
-    # 精准排除数据库文件，避免误伤附件目录中的文件
-    zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . -x "db.sqlite3" "db_dump_temp.db" "db_dump_temp.sql" # 打包当前目录，排除可能存在的旧备份
+    # 精准排除数据库文件和可能的备份目录，避免误伤附件目录中的文件
+    zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . "${EXCLUDE_ARGS[@]}" # 打包当前目录，排除可能存在的旧备份
     echo "正在追加数据库备份..."
     zip -j -P "$ZIP_PASSWORD" -q "$ZIP_FILE" "$TEMP_SQL_FILE" # 使用 -j 仅针对数据库文件，使其位于压缩包根目录
 fi

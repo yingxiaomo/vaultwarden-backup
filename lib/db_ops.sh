@@ -4,6 +4,11 @@
 # 数据库操作函数库
 # ==========================================
 
+# 确保 utils.sh 被加载 (提供 send_notification 等基础函数)
+if ! type send_notification >/dev/null 2>&1; then
+    source "$(dirname "${BASH_SOURCE[0]}")/utils.sh"
+fi
+
 # 备份 SQLite 数据库
 backup_sqlite() {
     local sqlite_db="$1"

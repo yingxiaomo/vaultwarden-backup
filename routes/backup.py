@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 
-from config import get_env_vars
+from app_config import get_env_vars
 from src.core import verify_auth
 from services.backup import BackupService
 

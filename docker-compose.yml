@@ -90,8 +90,8 @@ services:
       - "9876:9876"  # Web 面板端口
     
     volumes:
-      # 挂载 Vaultwarden 的数据目录 (只读挂载，保证数据安全)
-      - ./data:/data:ro
+      # 挂载 Vaultwarden 的数据目录 (需要读写权限以支持恢复功能)
+      - ./data:/data
       
       # 挂载本地备份目录，用于存放生成的加密压缩包
       - ./backup:/backup

@@ -3,7 +3,7 @@ import os
 import subprocess
 import shutil
 
-from config import get_env_vars
+from app_config import get_env_vars
 from utils.docker import get_vaultwarden_containers
 
 class RestoreService:
