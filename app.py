@@ -12,6 +12,7 @@ import shlex
 import json
 import re
 import glob
+import shutil
 
 # 初始化 FastAPI 应用
 app = FastAPI()
@@ -330,7 +331,6 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
             print("正在创建恢复前的临时备份...")
             os.makedirs(temp_backup_dir, exist_ok=True)
             # 备份数据目录中的所有文件
-            import shutil
             for item in os.listdir(data_dir):
                 item_path = os.path.join(data_dir, item)
                 if item != "temp_backup" and os.path.isdir(item_path):
@@ -374,7 +374,6 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
                 # 目标数据库文件路径
                 target_db_file = os.path.join(data_dir, "db.sqlite3")
                 # 重命名临时文件为正式数据库文件
-                import os
                 os.replace(temp_db_file, target_db_file)
                 print(f"✅ 已将 SQLite 备份文件重命名为: {target_db_file}")
             else:
@@ -466,7 +465,6 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         if create_temp_backup and os.path.exists(temp_backup_dir):
             print("正在回滚到恢复前的状态...")
             try:
-                import shutil
                 # 清理当前数据目录（除了临时备份）
                 for item in os.listdir(data_dir):
                     item_path = os.path.join(data_dir, item)

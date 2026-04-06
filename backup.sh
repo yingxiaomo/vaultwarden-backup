@@ -244,12 +244,14 @@ cp "$SQL_FILE" "$TEMP_SQL_FILE"
 
 if [ -z "$ZIP_PASSWORD" ]; then
     # 非加密打包
-    zip -r -q "$ZIP_FILE" . -x "*.db" "*.sql" # 打包当前目录，排除可能存在的旧备份
+    # 精准排除数据库文件，避免误伤附件目录中的文件
+    zip -r -q "$ZIP_FILE" . -x "db.sqlite3" "db_dump_temp.db" "db_dump_temp.sql" # 打包当前目录，排除可能存在的旧备份
     echo "正在追加数据库备份..."
     zip -j -q "$ZIP_FILE" "$TEMP_SQL_FILE" # 使用 -j 仅针对数据库文件，使其位于压缩包根目录
 else
     # 加密打包
-    zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . -x "*.db" "*.sql" # 打包当前目录，排除可能存在的旧备份
+    # 精准排除数据库文件，避免误伤附件目录中的文件
+    zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . -x "db.sqlite3" "db_dump_temp.db" "db_dump_temp.sql" # 打包当前目录，排除可能存在的旧备份
     echo "正在追加数据库备份..."
     zip -j -P "$ZIP_PASSWORD" -q "$ZIP_FILE" "$TEMP_SQL_FILE" # 使用 -j 仅针对数据库文件，使其位于压缩包根目录
 fi
