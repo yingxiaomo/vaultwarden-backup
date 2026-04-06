@@ -60,69 +60,11 @@
 
 #### 2.1 传统方式：通过环境变量配置
 
-适用于习惯通过 docker-compose.yml 直接配置的用户：
-
-```yaml
-version: '3.8'
-
-services:
-  vaultwarden-backup:
-    image: yingxiaomo/vaultwarden-backup:latest
-    container_name: vaultwarden_backup
-    restart: on-failure
-    environment:
-      - DB_TYPE=sqlite
-      # 压缩包 AES 加密密码 (可选，如果不设置则进行非加密打包)
-      # - ZIP_PASSWORD=your_secure_zip_password
-      - CRON_SCHEDULE=0 2 * * *
-      - RUN_ON_STARTUP=true
-      - LOCAL_BACKUP_KEEP_DAYS=15
-      # 远端备份保留天数 (可选，如果不设置则不清理)
-      # - RCLONE_KEEP_DAYS=15
-      # 备份文件前缀 (默认 vaultwarden_backup)
-      # - BACKUP_PREFIX=vaultwarden_backup
-      # - RCLONE_REMOTE=my_onedrive:/vaultwarden_backup
-      # - APPRISE_URL=tgram://bottoken/ChatID
-      # 方式 2: 使用独立的 Apprise 服务 API
-      # - APPRISE_API_URL=http://apprise:8000
-      # 时区配置 (默认 Asia/Shanghai)
-      - TZ=Asia/Shanghai
-    volumes:
-      - /path/to/your/vw_data:/vw_data:ro
-      - ./backups:/backup
-      # - ./rclone_config:/config/rclone/
-      # 挂载配置目录，用于持久化 Web 面板配置
-      - ./config:/app/config
-      # 挂载 Docker 套接字，用于控制其他容器
-      - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - "9876:9876"  # Web 面板端口
-```
+适用于习惯通过 docker-compose.yml 直接配置的用户，请参考项目根目录下的 [docker-compose.yml](docker-compose.yml) 文件。
 
 #### 2.2 推荐方式：通过 Web 面板配置（极简版）
 
-适用于喜欢通过可视化界面配置的用户，只需保留必要的挂载：
-
-```yaml
-version: '3.8'
-
-services:
-  vaultwarden-backup-web:
-    image: yingxiaomo/vaultwarden-backup:dev
-    container_name: vaultwarden_backup_dev
-    restart: on-failure
-    
-    ports:
-      - "9876:9876"  # Web 访问端口
-    
-    volumes:
-      # 物理文件的挂载必须保留
-      - ./vw_data:/vw_data:ro
-      - ./backups:/backup
-      - ./rclone_config:/config/rclone/
-      - ./config:/app/config  # 用于持久化 Web 面板配置（config.yaml）
-      - /var/run/docker.sock:/var/run/docker.sock
-```
+适用于喜欢通过可视化界面配置的用户，只需保留必要的挂载。您可以基于 [docker-compose.yml](docker-compose.yml) 文件进行简化，只保留核心挂载项。
 
 ### 3. 启动服务
 
