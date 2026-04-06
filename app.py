@@ -306,7 +306,7 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         env_vars = get_env_vars()
         
         # 检查数据目录是否存在
-        data_dir = env_vars.get("DATA_DIR", "/vw_data")
+        data_dir = env_vars.get("DATA_DIR", "/data")
         if not os.path.exists(data_dir):
             raise Exception(f"数据目录 {data_dir} 不存在，请检查挂载是否正确")
         
