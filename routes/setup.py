@@ -7,7 +7,7 @@ import json
 import shlex
 import hashlib
 
-from app_config import get_env_vars
+from app_config import get_env_vars, save_env_vars
 from utils import run_shell_command
 
 # 初始化模板
@@ -111,28 +111,9 @@ DB_NAME: {json.dumps(db_name or "")}
     with open(config_file_path, "w", encoding="utf-8") as f:
         f.write(config_content)
     
-    # 同步更新 env.sh
+    # 同步更新 env.sh 和 Crontab
     env_vars = get_env_vars()
-    env_file_path = "/app/env.sh"
-    with open(env_file_path, "w", encoding="utf-8") as f:
-        for key, value in env_vars.items():
-            if value is not None:
-                # 使用 shlex.quote，不用我们自己再加单引号了，它会自动处理所有特殊符号！
-                safe_val = shlex.quote(str(value))
-                f.write(f"export {key}={safe_val}\n")
-    
-    # 强制刷新 Crontab
-    import tempfile
-    cron_schedule = env_vars.get("CRON_SCHEDULE", "0 2 * * *")
-    cron_cmd = f"{cron_schedule} . /app/env.sh && /app/lib/scripts/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2\n"
-    with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
-        f.write(cron_cmd)
-        temp_file_path = f.name
-    try:
-        run_shell_command(["crontab", temp_file_path])
-    finally:
-        import os
-        os.unlink(temp_file_path)
+    save_env_vars(env_vars)
     
     # 生成会话令牌
     session_token = hashlib.sha256((username + password).encode()).hexdigest()

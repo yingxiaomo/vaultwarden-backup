@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 import os
 import shlex
 import sys
+import tempfile
 
 # 添加项目根目录到sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -46,7 +47,6 @@ async def lifespan(app: FastAPI):
                     f.write(f"export {key}={safe_val}\n")
         
         # 强制刷新 Crontab
-        import tempfile
         cron_schedule = env_vars.get("CRON_SCHEDULE", "0 2 * * *")
         cron_cmd = f"{cron_schedule} . /app/env.sh && /app/lib/scripts/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2\n"
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
