@@ -102,6 +102,9 @@ services:
       # Rclone 需要重写配置文件。如果只挂载单文件，可能会导致 Token 刷新冲突或失败。
       - ./rclone_config:/config/rclone/
       
+      # 挂载配置目录，用于持久化 Web 面板配置
+      - ./config:/app/config
+      
       # 挂载 Docker 套接字，用于控制其他容器
       - /var/run/docker.sock:/var/run/docker.sock
 

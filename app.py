@@ -203,13 +203,14 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         backup_path = os.path.join(backup_dir, backup_file)
         data_dir = env_vars.get("DATA_DIR", "/vw_data")
         
-        # 解压命令
+        # 使用列表形式调用，彻底杜绝空格和特殊字符引起的 Bug
         if env_vars.get("ZIP_PASSWORD"):
-            unzip_cmd = f"unzip -P {env_vars['ZIP_PASSWORD']} -o {backup_path} -d {data_dir}"
+            unzip_cmd = ["unzip", "-P", env_vars["ZIP_PASSWORD"], "-o", backup_path, "-d", data_dir]
         else:
-            unzip_cmd = f"unzip -o {backup_path} -d {data_dir}"
+            unzip_cmd = ["unzip", "-o", backup_path, "-d", data_dir]
         
-        subprocess.run(unzip_cmd, shell=True, check=True)
+        # 移除 shell=True
+        subprocess.run(unzip_cmd, check=True)
         print(f"已恢复备份: {backup_file}")
         
         # 启动 Vaultwarden 容器
