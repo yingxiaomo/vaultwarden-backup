@@ -13,10 +13,10 @@ export ALL_PROXY="${ALL_PROXY:-}"     # SOCKS5 代理地址，例如 socks5://19
 DB_TYPE="${DB_TYPE:-sqlite}"          # 数据库类型: sqlite, mysql, postgres
 DATA_DIR="${DATA_DIR:-/vw_data}"      # Vaultwarden 数据目录
 BACKUP_DIR="${BACKUP_DIR:-/backup}"   # 本地临时备份目录
-ZIP_PASSWORD="${ZIP_PASSWORD:-}"      # 压缩包加密密码 (必填)
-APPRISE_URL="${APPRISE_URL:-}"        # Apprise 通知 URL (直接使用命令行工具)
+ZIP_PASSWORD="${ZIP_PASSWORD:-}"      # 压缩包加密密码
+APPRISE_URL="${APPRISE_URL:-}"        # Apprise 通知 URL
 # 读取 API URL，并使用 %/ 自动移除末尾可能多余的斜杠，包容用户的书写习惯
-APPRISE_API_URL="${APPRISE_API_URL%/}"  # Apprise 服务 API 地址 (使用独立 Apprise 服务)
+APPRISE_API_URL="${APPRISE_API_URL%/}"  # Apprise 服务 API 地址
 RCLONE_REMOTE="${RCLONE_REMOTE:-}"    # Rclone 远程路径，例如 myremote:/vaultwarden_backup
 
 # 时间戳，用于生成唯一的文件名

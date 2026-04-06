@@ -86,6 +86,9 @@ services:
       # 时区配置 (默认 Asia/Shanghai)
       - TZ=Asia/Shanghai
 
+    ports:
+      - "8000:8000"  # Web 面板端口
+    
     volumes:
       # 挂载 Vaultwarden 的数据目录 (只读挂载，保证数据安全)
       - /path/to/your/vw_data:/vw_data:ro
@@ -98,6 +101,9 @@ services:
       # 因为某些网盘 (如 OneDrive, Google Drive) 的 Token 会定期刷新，
       # Rclone 需要重写配置文件。如果只挂载单文件，可能会导致 Token 刷新冲突或失败。
       - ./rclone_config:/config/rclone/
+      
+      # 挂载 Docker 套接字，用于控制其他容器
+      - /var/run/docker.sock:/var/run/docker.sock
 
     # 如果使用外部数据库容器，确保备份容器在数据库启动后运行
     # depends_on:

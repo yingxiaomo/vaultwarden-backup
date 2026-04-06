@@ -14,12 +14,15 @@ RUN apk add --no-cache \
     bash \
     tzdata \
     curl \
-    && pip3 install --no-cache-dir --break-system-packages apprise
+    && pip3 install --no-cache-dir --break-system-packages apprise fastapi uvicorn jinja2 python-docker
 
 RUN mkdir -p /app /vw_data /backup /config/rclone
 
 COPY backup.sh /app/backup.sh
 COPY entrypoint.sh /app/entrypoint.sh
+COPY app.py /app/app.py
+COPY templates /app/templates
+COPY static /app/static
 
 RUN chmod +x /app/backup.sh /app/entrypoint.sh
 

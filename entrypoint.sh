@@ -28,5 +28,10 @@ if [ "${RUN_ON_STARTUP:-true}" = "true" ]; then
     /app/backup.sh
 fi
 
+# 启动 FastAPI Web 服务
+echo "Starting FastAPI Web service..."
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload &
+
+# 启动 crond 守护进程
 echo "Starting crond daemon..."
 exec crond -f -l 2

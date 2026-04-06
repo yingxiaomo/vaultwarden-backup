@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vaultwarden 备份管理 - 恢复</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background-color: #343a40;
+            color: white;
+        }
+        .btn-primary {
+            background-color: #343a40;
+            border-color: #343a40;
+        }
+        .btn-primary:hover {
+            background-color: #23272b;
+            border-color: #23272b;
+        }
+        .nav-link {
+            color: #343a40;
+        }
+        .nav-link.active {
+            color: white !important;
+            background-color: #343a40 !important;
+        }
+        .table-hover tbody tr:hover {
+            background-color: #e9ecef;
+        }
+        .alert {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="mb-4">Vaultwarden 备份管理</h1>
+        
+        <nav class="nav nav-pills mb-4">
+            <a class="nav-link" href="/">仪表盘</a>
+            <a class="nav-link" href="/config">配置</a>
+            <a class="nav-link active" href="/restore">恢复</a>
+        </nav>
+        
+        <div class="alert alert-warning" role="alert">
+            恢复操作会停止 Vaultwarden 容器，然后解压恢复备份文件，最后重新启动容器。请确保在恢复前已经停止对 Vaultwarden 的所有操作。
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">选择备份文件</h5>
+            </div>
+            <div class="card-body">
+                <form action="/do_restore" method="post">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>选择</th>
+                                    <th>文件名</th>
+                                    <th>大小</th>
+                                    <th>修改时间</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for backup in backup_history %}
+                                    <tr>
+                                        <td><input type="radio" name="backup_file" value="{{ backup.name }}" required></td>
+                                        <td>{{ backup.name }}</td>
+                                        <td>{{ backup.size }}</td>
+                                        <td>{{ backup.mtime }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-4">执行恢复</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
