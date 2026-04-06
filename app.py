@@ -322,6 +322,75 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         subprocess.run(unzip_cmd, check=True)
         print(f"已恢复备份: {backup_file}")
         
+        # 处理 MySQL/PostgreSQL 的 SQL 文件导入
+        db_type = env_vars.get("DB_TYPE", "sqlite").lower()
+        if db_type in ["mysql", "postgres"]:
+            print(f"正在处理 {db_type} 数据库恢复...")
+            
+            # 查找解压后的 SQL 文件
+            import glob
+            sql_files = glob.glob(f"{data_dir}/*.sql")
+            if sql_files:
+                sql_file = sql_files[0]
+                print(f"找到 SQL 文件: {sql_file}")
+                
+                if db_type == "mysql":
+                    # MySQL 导入逻辑
+                    db_user = env_vars.get("DB_USER")
+                    db_password = env_vars.get("DB_PASSWORD")
+                    db_name = env_vars.get("DB_NAME")
+                    db_host = env_vars.get("DB_HOST", "db")
+                    db_port = env_vars.get("DB_PORT", "3306")
+                    
+                    if db_user and db_password and db_name:
+                        print("正在导入 MySQL 数据库...")
+                        # 使用 mysql 命令导入 SQL 文件
+                        mysql_cmd = [
+                            "mysql",
+                            f"--host={db_host}",
+                            f"--port={db_port}",
+                            f"--user={db_user}",
+                            f"--password={db_password}",
+                            db_name,
+                            "<",
+                            sql_file
+                        ]
+                        # 使用 shell=True 执行重定向
+                        subprocess.run(" ".join(mysql_cmd), shell=True, check=True)
+                        print("✅ MySQL 数据库导入成功")
+                    else:
+                        print("⚠️ MySQL 数据库信息不完整，跳过导入")
+                
+                elif db_type == "postgres":
+                    # PostgreSQL 导入逻辑
+                    db_user = env_vars.get("DB_USER")
+                    db_password = env_vars.get("DB_PASSWORD")
+                    db_name = env_vars.get("DB_NAME")
+                    db_host = env_vars.get("DB_HOST", "db")
+                    db_port = env_vars.get("DB_PORT", "5432")
+                    
+                    if db_user and db_password and db_name:
+                        print("正在导入 PostgreSQL 数据库...")
+                        # 设置 PGPASSWORD 环境变量
+                        import os
+                        os.environ["PGPASSWORD"] = db_password
+                        # 使用 psql 命令导入 SQL 文件
+                        psql_cmd = [
+                            "psql",
+                            f"--host={db_host}",
+                            f"--port={db_port}",
+                            f"--username={db_user}",
+                            f"--dbname={db_name}",
+                            "-f",
+                            sql_file
+                        ]
+                        subprocess.run(psql_cmd, check=True)
+                        print("✅ PostgreSQL 数据库导入成功")
+                    else:
+                        print("⚠️ PostgreSQL 数据库信息不完整，跳过导入")
+            else:
+                print("⚠️ 未找到 SQL 文件，跳过数据库导入")
+        
         # 启动 Vaultwarden 容器
         if client:
             for container in vaultwarden_containers:

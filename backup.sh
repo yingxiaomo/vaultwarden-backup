@@ -33,7 +33,14 @@ TIMESTAMP=$(date +"%Y%m%d_%H%M%S")    # 格式: 年月日_时分秒
 # 备份文件前缀，可通过环境变量自定义
 PREFIX="${BACKUP_PREFIX:-vaultwarden_backup}"
 BACKUP_NAME="${PREFIX}_${TIMESTAMP}" # 备份文件基础名称
-SQL_FILE="${BACKUP_DIR}/${BACKUP_NAME}.sql"   # 导出的 SQL 文件路径
+
+# 根据数据库类型使用不同的备份文件后缀
+if [ "$DB_TYPE" = "sqlite" ]; then
+    SQL_FILE="${BACKUP_DIR}/${BACKUP_NAME}.db"   # SQLite 二进制备份文件路径
+else
+    SQL_FILE="${BACKUP_DIR}/${BACKUP_NAME}.sql"   # MySQL/PostgreSQL SQL 文本文件路径
+fi
+
 ZIP_FILE="${BACKUP_DIR}/${BACKUP_NAME}.zip"   # 最终的加密压缩包路径
 
 # 压缩包生成完毕标志
@@ -106,8 +113,8 @@ if [ ! -w "$BACKUP_DIR" ]; then
 fi
 
 # 检查磁盘空间
-# 使用 df -m 以 MB 为单位输出，避免在 32 位系统上发生整数溢出
-FREE_SPACE_MB=$(df -m "$BACKUP_DIR" | tail -n 1 | awk '{print $4}' | tr -d '%')
+# 使用 df -Pm 以 MB 为单位输出，-P 参数确保 POSIX 标准格式，避免路径太长导致换行
+FREE_SPACE_MB=$(df -Pm "$BACKUP_DIR" | tail -n 1 | awk '{print $4}' | tr -d '%')
 # 5GB 转换为 MB
 MIN_SPACE_MB=$((5 * 1024))
 
@@ -227,11 +234,13 @@ fi
 if [ -z "$ZIP_PASSWORD" ]; then
     # 非加密打包
     echo "使用非加密方式打包..."
-    zip -r -q "$ZIP_FILE" . "$SQL_FILE"
+    # 使用 -j 参数忽略路径信息，避免压缩包内的路径套娃问题
+    zip -r -j -q "$ZIP_FILE" . "$SQL_FILE"
 else
     # 加密打包
     echo "使用加密方式打包..."
-    zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . "$SQL_FILE"
+    # 使用 -j 参数忽略路径信息，避免压缩包内的路径套娃问题
+    zip -r -j -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . "$SQL_FILE"
 fi
 
 # 检查打包是否成功
