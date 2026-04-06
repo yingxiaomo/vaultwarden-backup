@@ -65,125 +65,74 @@ def verify_auth(request: Request):
     
     return True
 
-# 读取配置：优先读 config.yaml，如果没有则尝试从系统的环境变量中初始化一份默认值
+# 读取配置：优先读 config.yaml，如果没有则触发自动初始化
 def get_env_vars():
-    # 如果有 config.yaml，直接读取
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-                env_vars = yaml.safe_load(f)
+                return yaml.safe_load(f) or {}
         except Exception as e:
-            # YAML 解析失败，创建新的配置文件
-            print(f"配置文件解析失败: {e}，创建新的配置文件")
-            env_vars = create_default_config()
-    else:
-        # 如果没有，从 config.yaml.example 中读取带注释的配置
-        env_vars = {}
-        example_config = "/app/config.yaml.example"
-        if os.path.exists(example_config):
-            try:
-                with open(example_config, "r", encoding="utf-8") as f:
-                    # 读取文件内容，保留注释
-                    config_content = f.read()
-                    # 保存到 config.yaml
-                    os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
-                    with open(CONFIG_FILE, "w", encoding="utf-8") as f_out:
-                        f_out.write(config_content)
-                    # 然后重新读取解析为字典
-                    with open(CONFIG_FILE, "r", encoding="utf-8") as f_in:
-                        env_vars = yaml.safe_load(f_in)
-            except Exception as e:
-                # 示例文件也失败，创建默认配置
-                print(f"示例配置文件解析失败: {e}，创建默认配置")
-                env_vars = create_default_config()
-        else:
-            # 如果 example 也不存在，创建一个带有完整注释的配置文件
-            env_vars = create_default_config()
-    
-    return env_vars
+            print(f"配置文件解析失败: {e}，将重新初始化配置文件")
+            
+    # 如果不存在或解析失败，进入全自动初始化流程
+    return create_default_config()
 
+# 生成默认配置：融合 example 模板和 docker-compose 环境变量
 def create_default_config():
-    # 创建一个带有完整注释的基础模板
-    config_content = """# Vaultwarden 备份配置文件
+    example_config = "/app/config.yaml.example"
+    config_content = ""
+    
+    # 1. 优先尝试读取镜像里自带的带注释模板
+    if os.path.exists(example_config):
+        try:
+            with open(example_config, "r", encoding="utf-8") as f:
+                config_content = f.read()
+        except Exception:
+            pass
+            
+    # 2. 如果模板丢失，使用备用硬编码字符串兜底
+    if not config_content:
+        config_content = """# Vaultwarden 备份配置文件
 # 请根据实际情况修改以下配置
 
-# 数据库类型 (sqlite, mysql, postgres)
 DB_TYPE: sqlite
-
-# MySQL 数据库配置
-# DB_HOST: db
-# DB_PORT: '3306'
-# DB_USER: vaultwarden
-# DB_NAME: vaultwarden
-
-# 压缩包 AES 加密密码
-# ZIP_PASSWORD: your_secure_zip_password
-
-# 备份文件前缀
 BACKUP_PREFIX: vaultwarden_backup
-
-# 备份目录
 BACKUP_DIR: /backup
-
-# 数据目录
 DATA_DIR: /vw_data
-
-# 定时任务执行计划
 CRON_SCHEDULE: 0 2 * * *
-
-# 启动时执行备份
 RUN_ON_STARTUP: 'true'
-
-# 本地备份保留天数
 LOCAL_BACKUP_KEEP_DAYS: '15'
-
-# 远端备份保留天数
+# ZIP_PASSWORD: your_secure_zip_password
 # RCLONE_KEEP_DAYS: '15'
-
-# Rclone 远程存储配置
 # RCLONE_REMOTE: my_onedrive:/vaultwarden_backup
-
-# Apprise 通知配置
 # APPRISE_URL: tgram://bottoken/ChatID
-# APPRISE_API_URL: http://apprise:8000
-
-# 时区配置
+# APPRISE_API_URL: `http://apprise:8000`
 TZ: Asia/Shanghai
-
-# Web 面板账号密码
 WEB_USER: admin
 WEB_PASS: admin"""
-    
-    # [核心修复]：动态吸收 docker-compose 传进来的环境变量
+
+    # 3. [核心魔法]：动态吸收 docker-compose 传进来的环境变量
     import re
     for key, value in os.environ.items():
-        # 忽略系统自带的环境变量
         if key in ["PATH", "HOSTNAME", "PWD", "HOME", "SHLVL", "TERM"]:
             continue
-        # 只处理大写的业务变量
         if key.isupper():
-            # 安全转义：如果有空格，加上单引号
             safe_value = f"'{value}'" if ' ' in str(value) else value
-            
-            # 正则魔法：寻找模板里对应的行（无论它前面有没有 # 注释符）
+            # 寻找模板里对应的行（无论是否被 # 注释），将其激活并替换
             pattern = rf'^#?\s*({key}):.*$'
             if re.search(pattern, config_content, flags=re.MULTILINE):
-                # 找到了！把它取消注释，并替换为用户的真实值
                 config_content = re.sub(pattern, f'{key}: {safe_value}', config_content, flags=re.MULTILINE)
             else:
-                # 没找到？说明是隐藏参数，追加到末尾
                 config_content += f'\n{key}: {safe_value}'
     
-    # 保存生成的神奇 YAML
+    # 4. 保存生成的神奇 YAML
     os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         f.write(config_content)
     
-    # 读取并返回
+    # 5. 读取并返回字典给系统使用
     with open(CONFIG_FILE, "r", encoding="utf-8") as f_in:
-        env_vars = yaml.safe_load(f_in)
-    
-    return env_vars
+        return yaml.safe_load(f_in) or {}
 
 
 
