@@ -121,29 +121,6 @@ def run_backup_script():
 # 主页面
 @app.get("/", response_class=HTMLResponse, dependencies=[Depends(verify_auth)])
 async def root(request: Request):
-    # 获取磁盘空间
-    try:
-        # 使用 df -h 获取人类可读的磁盘空间信息（用于前端显示）
-        df_output = subprocess.check_output(["df", "-h"], universal_newlines=True)
-        disk_space = df_output.splitlines()
-        
-        # 使用 df -m 获取以 MB 为单位的磁盘空间信息（用于后续可能的空间不足提示逻辑）
-        df_m_output = subprocess.check_output(["df", "-m"], universal_newlines=True)
-        disk_space_mb = df_m_output.splitlines()
-        
-        # 提取根目录的剩余空间（用于示例）
-        root_free_space = None
-        for line in disk_space_mb:
-            if line.startswith("/"):
-                parts = line.split()
-                if len(parts) >= 4:
-                    root_free_space = parts[3]
-                    break
-    except Exception as e:
-        disk_space = [f"获取磁盘空间失败: {e}"]
-        disk_space_mb = []
-        root_free_space = None
-    
     # 获取备份历史
     backup_history = []
     try:
@@ -169,7 +146,6 @@ async def root(request: Request):
     
     return templates.TemplateResponse(request=request, name="index.html", context={
         "request": request,
-        "disk_space": disk_space,
         "backup_history": backup_history,
         "env_vars": env_vars
     })
@@ -351,18 +327,37 @@ async def setup(request: Request):
 # 处理初始化表单提交
 @app.post("/do_setup")
 async def do_setup(request: Request, username: str = Form(...), password: str = Form(...)):
-    # 读取现有配置
-    env_vars = get_env_vars()
+    config_file_path = "/app/config/config.yaml"
+    example_config = "/app/config.yaml.example"
+    
+    # 读取配置文件内容，保留注释
+    if os.path.exists(config_file_path):
+        with open(config_file_path, "r", encoding="utf-8") as f:
+            config_content = f.read()
+    elif os.path.exists(example_config):
+        with open(example_config, "r", encoding="utf-8") as f:
+            config_content = f.read()
+    else:
+        # 如果都不存在，创建一个基本配置
+        config_content = "# Vaultwarden 备份配置文件\n# 请根据实际情况修改以下配置\n\nDB_TYPE: sqlite\nCRON_SCHEDULE: 0 2 * * *\nRUN_ON_STARTUP: 'true'\nLOCAL_BACKUP_KEEP_DAYS: '15'\nBACKUP_PREFIX: vaultwarden_backup\nBACKUP_DIR: /backup\nDATA_DIR: /vw_data\nTZ: Asia/Shanghai\n"
     
     # 更新账号密码
-    env_vars["WEB_USER"] = username
-    env_vars["WEB_PASS"] = password
+    # 查找并替换 WEB_USER 和 WEB_PASS
+    import re
+    config_content = re.sub(r'(WEB_USER:).*', f'\1 {username}', config_content)
+    config_content = re.sub(r'(WEB_PASS:).*', f'\1 {password}', config_content)
+    
+    # 如果没有 WEB_USER 和 WEB_PASS，添加到文件末尾
+    if 'WEB_USER:' not in config_content:
+        config_content += f'\n# Web 面板账号密码\nWEB_USER: {username}\nWEB_PASS: {password}\n'
     
     # 保存配置
-    config_file_path = "/app/config/config.yaml"
     os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
     with open(config_file_path, "w", encoding="utf-8") as f:
-        yaml.dump(env_vars, f, default_flow_style=False, allow_unicode=True, indent=2)
+        f.write(config_content)
+    
+    # 读取更新后的配置
+    env_vars = get_env_vars()
     
     # 生成 env.sh
     env_file_path = "/app/env.sh"
