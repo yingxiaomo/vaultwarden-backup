@@ -88,7 +88,7 @@ services:
 
     volumes:
       # 挂载 Vaultwarden 的数据目录 (只读挂载，保证数据安全)
-      - /path/to/your/vw_data:/vw_data:ro
+      - /path/to/your/data:/data:ro
       
       # 挂载本地备份目录，用于存放生成的加密压缩包
       - ./backups:/backup
