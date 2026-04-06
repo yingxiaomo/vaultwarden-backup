@@ -29,9 +29,13 @@
 
 确保你已经安装了 Docker 和 Docker Compose。如果你需要使用 Rclone 上传到云端，请先准备好 `rclone.conf` 配置文件。
 
-### 2. 编写 `docker-compose.yml`
+### 2. 选择配置方式
 
-创建一个 `docker-compose.yml` 文件，参考以下示例配置：
+本项目提供两种配置方式，你可以根据自己的需求选择：
+
+#### 2.1 传统方式：通过环境变量配置
+
+适用于习惯通过 docker-compose.yml 直接配置的用户：
 
 ```yaml
 version: '3.8'
@@ -62,23 +66,17 @@ services:
       - /path/to/your/vw_data:/vw_data:ro
       - ./backups:/backup
       # - ./rclone_config:/config/rclone/
+      # 挂载配置目录，用于持久化 Web 面板配置
+      - ./config:/app/config
+      # 挂载 Docker 套接字，用于控制其他容器
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "9876:9876"  # Web 面板端口
 ```
 
-### 3. 启动服务
+#### 2.2 推荐方式：通过 Web 面板配置（极简版）
 
-在 `docker-compose.yml` 所在目录下运行：
-
-```bash
-docker-compose up -d
-```
-
-### 4. 使用 Web 面板管理（推荐）
-
-从 v2.0 版本开始，我们提供了可视化的 Web 面板，支持完全通过网页进行配置管理，无需修改 `docker-compose.yml` 文件。
-
-#### 4.1 极简版 docker-compose.yml
-
-如果你想使用 Web 面板进行全配置，可以使用以下极简版配置：
+适用于喜欢通过可视化界面配置的用户，只需保留必要的挂载：
 
 ```yaml
 version: '3.8'
@@ -101,7 +99,19 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 ```
 
-#### 4.2 访问 Web 面板
+### 3. 启动服务
+
+在 `docker-compose.yml` 所在目录下运行：
+
+```bash
+docker-compose up -d
+```
+
+### 4. 使用 Web 面板管理（推荐）
+
+从 v2.0 版本开始，我们提供了可视化的 Web 面板，支持完全通过网页进行配置管理。
+
+#### 4.1 访问 Web 面板
 
 启动容器后，在浏览器中访问：
 
@@ -109,7 +119,7 @@ services:
 http://localhost:9876
 ```
 
-#### 4.3 配置说明
+#### 4.2 配置说明
 
 1. **首次访问**：容器启动时会自动在 `./config` 目录中初始化 `config.yaml` 文件，Web 面板会显示默认配置。
 2. **修改配置**：在 Web 面板中修改配置后，点击 "保存配置" 按钮，配置会自动保存到 `./config/config.yaml` 文件中。
@@ -117,7 +127,7 @@ http://localhost:9876
 4. **配置迁移**：只需拷贝 `./config` 目录，即可在不同机器间快速迁移配置。
 5. **一键操作**：Web 面板支持一键执行备份和恢复操作，方便快捷。
 
-#### 4.4 config.yaml 示例
+#### 4.3 config.yaml 示例
 
 以下是一个完整的 `config.yaml` 配置示例，包含所有可用的配置项和详细说明：
 
@@ -144,9 +154,9 @@ APPRISE_API_URL: http://apprise:8000  # 独立 Apprise 服务 API 地址
 DATA_DIR: /vw_data  # Vaultwarden 数据目录
 BACKUP_DIR: /backup  # 本地备份目录
 
-# 数据库连接信息（仅 MySQL/PostgreSQL）
+# 数据库连接信息
 DB_HOST: db  # 数据库主机地址
-DB_PORT: '3306'  # 数据库端口（MySQL: 3306, PostgreSQL: 5432）
+DB_PORT: '3306'  # 数据库端口
 DB_USER: vaultwarden  # 数据库用户名
 DB_PASSWORD: your_db_password  # 数据库密码
 DB_NAME: vaultwarden  # 数据库名称

@@ -47,7 +47,10 @@ def verify_auth(request: Request):
     env_vars = get_env_vars()
     
     # 1. 检查是否是首次运行（未设置账号密码）
-    if not env_vars.get("WEB_USER") or not env_vars.get("WEB_PASS"):
+    saved_user = str(env_vars.get("WEB_USER", ""))
+    saved_pass = str(env_vars.get("WEB_PASS", ""))
+    
+    if not saved_user or not saved_pass:
         raise RequiresSetupException()
     
     # 2. 检查会话 Cookie 是否合法
@@ -55,8 +58,8 @@ def verify_auth(request: Request):
     if not session_token:
         raise RequiresLoginException()
     
-    # 3. 验证会话令牌
-    expected_token = hashlib.sha256((env_vars.get("WEB_USER") + env_vars.get("WEB_PASS")).encode()).hexdigest()
+    # 3. 验证会话令牌，使用与登录时相同的生成方式
+    expected_token = hashlib.sha256((saved_user + saved_pass).encode()).hexdigest()
     if session_token != expected_token:
         raise RequiresLoginException()
     
@@ -180,136 +183,7 @@ WEB_PASS: admin"""
     
     return env_vars
 
-# 保存配置：同时保存为 YAML 和 Shell 脚本
-def save_env_vars(env_vars):
-    # 1. 保存结构化的 config.yaml (Web 面板使用) - 保留注释
-    os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
-    
-    # 如果配置文件存在且包含注释，保留注释
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-            config_content = f.read()
-        
-        # 如果文件包含注释，使用正则表达式更新值，保留注释
-        if "#" in config_content:
-            import re
-            updated_content = config_content
-            for key, value in env_vars.items():
-                # 处理值中的引号
-                if isinstance(value, str):
-                    # 如果值包含空格，需要用引号包围
-                    if ' ' in value:
-                        # 确保值被正确引用
-                        if not (value.startswith('"') and value.endswith('"')) and not (value.startswith("'") and value.endswith("'")):
-                            value = f"'{value}'"
-                
-                # 替换配置值，保留注释
-                pattern = f'({key}:).*'
-                replacement = f'\1 {value}'
-                updated_content = re.sub(pattern, replacement, updated_content)
-            
-            # 保存更新后的内容
-            with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-                f.write(updated_content)
-        else:
-            # 如果文件不包含注释，使用 yaml.dump
-            with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-                yaml.dump(env_vars, f, default_flow_style=False, allow_unicode=True, indent=2)
-    else:
-        # 如果文件不存在，创建一个带有注释的配置文件
-        config_content = """# Vaultwarden 备份配置文件
-# 请根据实际情况修改以下配置
 
-# 数据库类型 (sqlite, mysql, postgres)
-DB_TYPE: sqlite
-
-# MySQL 数据库配置（仅当 DB_TYPE=mysql 时使用）
-DB_HOST: db
-DB_PORT: '3306'
-DB_USER: vaultwarden
-DB_NAME: vaultwarden
-
-# PostgreSQL 数据库配置（仅当 DB_TYPE=postgres 时使用）
-PG_HOST: db
-PG_PORT: '5432'
-PG_USER: vaultwarden
-PG_DB: vaultwarden
-
-# 压缩包 AES 加密密码（可选，如果不设置则进行非加密打包）
-# ZIP_PASSWORD: your_secure_zip_password
-
-# 备份文件前缀（默认 vaultwarden_backup）
-BACKUP_PREFIX: vaultwarden_backup
-
-# 备份目录
-BACKUP_DIR: /backup
-
-# 数据目录
-DATA_DIR: /vw_data
-
-# 定时任务执行计划（Cron 表达式）
-# 格式：分 时 日 月 周
-# 示例：0 2 * * * （每天凌晨 2 点）
-CRON_SCHEDULE: 0 2 * * *
-
-# 启动时执行备份（true/false）
-RUN_ON_STARTUP: 'true'
-
-# 本地备份保留天数
-LOCAL_BACKUP_KEEP_DAYS: '15'
-
-# 远端备份保留天数（可选，如果不设置则不清理）
-# RCLONE_KEEP_DAYS: '15'
-
-# Rclone 远程存储配置
-# 格式：remote_name:path
-# 示例：my_onedrive:/vaultwarden_backup
-# RCLONE_REMOTE: my_onedrive:/vaultwarden_backup
-
-# Apprise 通知配置
-# 方式 1: 直接配置通知 URL
-# APPRISE_URL: tgram://bottoken/ChatID
-
-# 方式 2: 使用独立的 Apprise 服务 API
-# APPRISE_API_URL: http://apprise:8000
-
-# 时区配置
-TZ: Asia/Shanghai
-
-# HTTP 代理配置（可选）
-# HTTP_PROXY: http://192.168.1.100:7890
-# HTTPS_PROXY: http://192.168.1.100:7890
-# ALL_PROXY: socks5://192.168.1.100:7890
-
-# Web 面板账号密码
-WEB_USER: admin
-WEB_PASS: admin"""
-        
-        # 更新配置值
-        import re
-        updated_content = config_content
-        for key, value in env_vars.items():
-            # 处理值中的引号
-            if isinstance(value, str):
-                # 如果值包含空格，需要用引号包围
-                if ' ' in value:
-                    # 确保值被正确引用
-                    if not (value.startswith('"') and value.endswith('"')) and not (value.startswith("'") and value.endswith("'")):
-                        value = f"'{value}'"
-            
-            # 替换配置值，保留注释
-            pattern = f'({key}:).*'
-            replacement = f'\1 {value}'
-            updated_content = re.sub(pattern, replacement, updated_content)
-        
-        # 保存配置
-        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-            f.write(updated_content)
-    
-    # 2. 同步生成 env.sh (底层 Bash 脚本使用)
-    with open(ENV_FILE, "w") as f:
-        for key, value in env_vars.items():
-            f.write(f"export {key}='{value}'\n")
 
 # 后台任务：执行备份
 def run_backup_script():
@@ -548,8 +422,8 @@ async def do_setup(request: Request, username: str = Form(...), password: str = 
     # 更新账号密码
     # 查找并替换 WEB_USER 和 WEB_PASS
     import re
-    config_content = re.sub(r'(WEB_USER:).*', f'\1 {username}', config_content)
-    config_content = re.sub(r'(WEB_PASS:).*', f'\1 {password}', config_content)
+    config_content = re.sub(r'(WEB_USER:).*', f'WEB_USER: {username}', config_content)
+    config_content = re.sub(r'(WEB_PASS:).*', f'WEB_PASS: {password}', config_content)
     
     # 如果没有 WEB_USER 和 WEB_PASS，添加到文件末尾
     if 'WEB_USER:' not in config_content:
@@ -595,8 +469,12 @@ async def login(request: Request, error: str = None):
 async def do_login(request: Request, username: str = Form(...), password: str = Form(...)):
     env_vars = get_env_vars()
     
+    # 强制将读取到的变量转换为字符串，防止纯数字密码对比失败
+    saved_user = str(env_vars.get("WEB_USER", ""))
+    saved_pass = str(env_vars.get("WEB_PASS", ""))
+    
     # 验证用户名密码
-    if username == env_vars.get("WEB_USER") and password == env_vars.get("WEB_PASS"):
+    if username == saved_user and password == saved_pass:
         # 生成会话令牌
         session_token = hashlib.sha256((username + password).encode()).hexdigest()
         
