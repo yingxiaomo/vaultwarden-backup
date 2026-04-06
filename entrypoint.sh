@@ -16,9 +16,9 @@ echo "Vaultwarden 备份容器已启动"
 echo "Cron 执行计划: $CRON_SCHEDULE"
 echo "=================================================="
 
-# 配置文件由 Web 面板管理，跳过初始化
-# 当 Python 启动时，会自动从 config.json 生成 env.sh
-echo "配置文件由 Web 面板管理，跳过环境变量初始化。"
+echo "正在同步 Web 面板配置到底层运行环境..."
+# 让 Python 读取 config.yaml 并强制生成最新的 /app/env.sh
+python3 -c "from app import get_env_vars, save_env_vars; save_env_vars(get_env_vars())"
 
 # 在 crontab 里先 source 环境变量，再执行备份脚本
 echo "$CRON_SCHEDULE . /app/env.sh && /app/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2" | crontab -
