@@ -230,17 +230,18 @@ if [ ! -f "$SQL_FILE" ]; then
     exit 1
 fi
 
-# 根据是否设置了密码决定是否加密打包
+# [核心修复]：分两步打包，既保留附件目录结构，又防止数据库文件出现“路径套娃”
+echo "正在打包数据目录..."
 if [ -z "$ZIP_PASSWORD" ]; then
     # 非加密打包
-    echo "使用非加密方式打包..."
-    # 使用 -j 参数忽略路径信息，避免压缩包内的路径套娃问题
-    zip -r -j -q "$ZIP_FILE" . "$SQL_FILE"
+    zip -r -q "$ZIP_FILE" . -x "*.db" "*.sql" # 打包当前目录，排除可能存在的旧备份
+    echo "正在追加数据库备份..."
+    zip -j -q "$ZIP_FILE" "$SQL_FILE" # 使用 -j 仅针对数据库文件，使其位于压缩包根目录
 else
     # 加密打包
-    echo "使用加密方式打包..."
-    # 使用 -j 参数忽略路径信息，避免压缩包内的路径套娃问题
-    zip -r -j -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . "$SQL_FILE"
+    zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . -x "*.db" "*.sql" # 打包当前目录，排除可能存在的旧备份
+    echo "正在追加数据库备份..."
+    zip -j -P "$ZIP_PASSWORD" -q "$ZIP_FILE" "$SQL_FILE" # 使用 -j 仅针对数据库文件，使其位于压缩包根目录
 fi
 
 # 检查打包是否成功

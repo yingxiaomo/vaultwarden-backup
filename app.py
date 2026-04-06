@@ -11,6 +11,7 @@ import hashlib
 import shlex
 import json
 import re
+import glob
 
 # 初始化 FastAPI 应用
 app = FastAPI()
@@ -328,7 +329,6 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
             print(f"正在处理 {db_type} 数据库恢复...")
             
             # 查找解压后的 SQL 文件
-            import glob
             sql_files = glob.glob(f"{data_dir}/*.sql")
             if sql_files:
                 sql_file = sql_files[0]
@@ -344,19 +344,19 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
                     
                     if db_user and db_password and db_name:
                         print("正在导入 MySQL 数据库...")
-                        # 使用 mysql 命令导入 SQL 文件
+                        # 1. 准备环境变量（最安全的方式）
+                        os.environ["MYSQL_PWD"] = db_password
+                        # 2. 构建纯列表命令（不使用 shell=True）
                         mysql_cmd = [
                             "mysql",
                             f"--host={db_host}",
                             f"--port={db_port}",
                             f"--user={db_user}",
-                            f"--password={db_password}",
-                            db_name,
-                            "<",
-                            sql_file
+                            db_name
                         ]
-                        # 使用 shell=True 执行重定向
-                        subprocess.run(" ".join(mysql_cmd), shell=True, check=True)
+                        # 3. 使用 Python 的文件流处理重定向，避开 Shell 风险
+                        with open(sql_file, "r") as f:
+                            subprocess.run(mysql_cmd, stdin=f, check=True)
                         print("✅ MySQL 数据库导入成功")
                     else:
                         print("⚠️ MySQL 数据库信息不完整，跳过导入")
@@ -372,7 +372,6 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
                     if db_user and db_password and db_name:
                         print("正在导入 PostgreSQL 数据库...")
                         # 设置 PGPASSWORD 环境变量
-                        import os
                         os.environ["PGPASSWORD"] = db_password
                         # 使用 psql 命令导入 SQL 文件
                         psql_cmd = [
