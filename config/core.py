@@ -24,11 +24,6 @@ def get_env_vars():
 
 # 保存配置
 def save_env_vars(env_vars):
-    # 保存为 YAML 文件
-    os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
-    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-        yaml.dump(env_vars, f, default_flow_style=False, allow_unicode=True)
-    
     # 同步更新 env.sh
     with open(ENV_FILE, "w", encoding="utf-8") as f:
         for key, value in env_vars.items():
@@ -38,7 +33,7 @@ def save_env_vars(env_vars):
     
     # 强制刷新 Crontab
     cron_schedule = env_vars.get("CRON_SCHEDULE", "0 2 * * *")
-    cron_cmd = f"{cron_schedule} . /app/env.sh && /app/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2\n"
+    cron_cmd = f"{cron_schedule} . /app/env.sh && /app/lib/scripts/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2\n"
     with open("/tmp/crontab.txt", "w") as f:
         f.write(cron_cmd)
     subprocess.run(["crontab", "/tmp/crontab.txt"])

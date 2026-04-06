@@ -13,6 +13,14 @@ class RestoreService:
     def restore_backup(backup_file):
         """恢复备份"""
         try:
+            # 初始化 Docker 客户端
+            try:
+                import docker
+                client = docker.from_env()
+            except:
+                client = None
+                print("警告: 无法初始化 Docker 客户端，将跳过容器操作")
+            
             # 获取最新的环境变量
             env_vars = get_env_vars()
             
@@ -22,7 +30,7 @@ class RestoreService:
                 raise Exception(f"数据目录 {data_dir} 不存在，请检查挂载是否正确")
             
             # 停止 Vaultwarden 容器
-            vaultwarden_containers = get_vaultwarden_containers()
+            vaultwarden_containers = get_vaultwarden_containers(client)
             for container in vaultwarden_containers:
                 container.stop()
                 print(f"已停止 Vaultwarden 容器: {container.name}")
@@ -165,7 +173,7 @@ class RestoreService:
                     print("⚠️ 未找到 SQL 文件，跳过数据库导入")
             
             # 启动 Vaultwarden 容器
-            vaultwarden_containers = get_vaultwarden_containers()
+            vaultwarden_containers = get_vaultwarden_containers(client)
             for container in vaultwarden_containers:
                 container.start()
                 print(f"已启动 Vaultwarden 容器: {container.name}")
