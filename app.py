@@ -159,7 +159,7 @@ async def root(request: Request):
     # 获取环境变量
     env_vars = get_env_vars()
     
-    return templates.TemplateResponse("index.html", {
+    return templates.TemplateResponse(request=request, name="index.html", context={
         "request": request,
         "disk_space": disk_space,
         "backup_history": backup_history,
@@ -170,7 +170,7 @@ async def root(request: Request):
 @app.get("/config", response_class=HTMLResponse, dependencies=[Depends(verify_credentials)])
 async def config(request: Request):
     env_vars = get_env_vars()
-    return templates.TemplateResponse("config.html", {
+    return templates.TemplateResponse(request=request, name="config.html", context={
         "request": request,
         "env_vars": env_vars
     })
@@ -222,7 +222,7 @@ async def restore(request: Request):
     except Exception as e:
         backup_history = [f"获取备份历史失败: {e}"]
     
-    return templates.TemplateResponse("restore.html", {
+    return templates.TemplateResponse(request=request, name="restore.html", context={
         "request": request,
         "backup_history": backup_history
     })
@@ -269,7 +269,7 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         return RedirectResponse("/", status_code=303)
     except Exception as e:
         print(f"恢复失败: {e}")
-        return templates.TemplateResponse("error.html", {
+        return templates.TemplateResponse(request=request, name="error.html", context={
             "request": request,
             "error": f"恢复失败: {e}"
         })
@@ -284,7 +284,7 @@ async def do_backup(request: Request, background_tasks: BackgroundTasks):
         return RedirectResponse("/", status_code=303)
     except Exception as e:
         print(f"备份失败: {e}")
-        return templates.TemplateResponse("error.html", {
+        return templates.TemplateResponse(request=request, name="error.html", context={
             "request": request,
             "error": f"备份失败: {e}"
         })
