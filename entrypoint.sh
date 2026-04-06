@@ -1,19 +1,19 @@
 #!/bin/bash
 
 if [ -n "$TZ" ] && [ -f "/usr/share/zoneinfo/$TZ" ]; then
-    echo "Configuring timezone to $TZ..."
+    echo "正在配置时区为 $TZ..."
     cp "/usr/share/zoneinfo/$TZ" /etc/localtime
     echo "$TZ" > /etc/timezone
 else
-    echo "No TZ environment variable set or invalid timezone. Using default."
+    echo "未设置 TZ 环境变量或时区无效。使用默认时区。"
 fi
 
 # 默认 Cron 表达式，如果未设置则默认每天凌晨 2 点执行
 CRON_SCHEDULE="${CRON_SCHEDULE:-0 2 * * *}"
 
 echo "=================================================="
-echo "Vaultwarden Backup Container Started"
-echo "Cron Schedule: $CRON_SCHEDULE"
+echo "Vaultwarden 备份容器已启动"
+echo "Cron 执行计划: $CRON_SCHEDULE"
 echo "=================================================="
 
 # 将当前所有环境变量导出，并兼容 Alpine 的 sh 解析
@@ -29,9 +29,9 @@ if [ "${RUN_ON_STARTUP:-true}" = "true" ]; then
 fi
 
 # 启动 FastAPI Web 服务
-echo "Starting FastAPI Web service..."
+echo "正在启动 FastAPI Web 服务..."
 uvicorn app:app --host 0.0.0.0 --port 9876 --reload &
 
 # 启动 crond 守护进程
-echo "Starting crond daemon..."
+echo "正在启动 crond 守护进程..."
 exec crond -f -l 2

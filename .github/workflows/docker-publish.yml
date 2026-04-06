@@ -38,13 +38,13 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            # 为 main 分支打上 latest 标签
-            type=raw,value=latest,enable={{is_default_branch}}
-            # 为所有分支打上日期版本标签，格式如: 20240520
+            # 1. 只有在 main 分支推送时，才打 latest 标签
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            # 2. 为所有分支打上日期版本标签，格式如: 20240520
             type=raw,value={{date 'YYYYMMDD'}}
-            # 为 web-panel-dev 分支打上开发版本标签
-            type=raw,value=dev,enable={{contains(github.ref, 'web-panel-dev')}}
-            # 使用 git commit sha 作为 tag
+            # 3. 只有在 web-panel-dev 分支推送时，才打 dev 标签
+            type=raw,value=dev,enable=${{ endsWith(github.ref, 'web-panel-dev') }}
+            # 4. 使用 git commit sha 作为 tag
             type=sha,format=short
 
       - name: Build and push Docker image

@@ -43,17 +43,55 @@ def save_env_vars(env_vars):
         for key, value in env_vars.items():
             f.write(f"export {key}='{value}'\n")
 
-# 主页面@app.get("/", response_class=HTMLResponse)async def root(request: Request):    # 获取磁盘空间    try:        df_output = subprocess.check_output(["df", "-h"], universal_newlines=True)        disk_space = df_output.splitlines()    except Exception as e:        disk_space = [f"获取磁盘空间失败: {e}"]    
-    # 获取备份历史    backup_history = []    try:        backup_dir = os.environ.get("BACKUP_DIR", "/backup")        if os.path.exists(backup_dir):            files = os.listdir(backup_dir)            for file in files:
+# 主页面
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    # 获取磁盘空间
+    try:
+        # 使用 df -h 获取人类可读的磁盘空间信息（用于前端显示）
+        df_output = subprocess.check_output(["df", "-h"], universal_newlines=True)
+        disk_space = df_output.splitlines()
+        
+        # 使用 df -m 获取以 MB 为单位的磁盘空间信息（用于后续可能的空间不足提示逻辑）
+        df_m_output = subprocess.check_output(["df", "-m"], universal_newlines=True)
+        disk_space_mb = df_m_output.splitlines()
+        
+        # 提取根目录的剩余空间（用于示例）
+        root_free_space = None
+        for line in disk_space_mb:
+            if line.startswith("/"):
+                parts = line.split()
+                if len(parts) >= 4:
+                    root_free_space = parts[3]
+                    break
+    except Exception as e:
+        disk_space = [f"获取磁盘空间失败: {e}"]
+        disk_space_mb = []
+        root_free_space = None
+    
+    # 获取备份历史
+    backup_history = []
+    try:
+        backup_dir = os.environ.get("BACKUP_DIR", "/backup")
+        if os.path.exists(backup_dir):
+            files = os.listdir(backup_dir)
+            for file in files:
                 if file.endswith(".zip"):
                     file_path = os.path.join(backup_dir, file)
                     stat = os.stat(file_path)
-                    size = os.path.getsize(file_path) / (1024 * 1024)  # 转换为 MB                    backup_history.append({
+                    size = os.path.getsize(file_path) / (1024 * 1024)  # 转换为 MB
+                    backup_history.append({
                         "name": file,
                         "size": f"{size:.2f} MB",
                         "mtime": datetime.datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
-                    })            backup_history.sort(key=lambda x: x["mtime"], reverse=True)    except Exception as e:        backup_history = [f"获取备份历史失败: {e}"]    
-    # 获取环境变量    env_vars = get_env_vars()    
+                    })
+            backup_history.sort(key=lambda x: x["mtime"], reverse=True)
+    except Exception as e:
+        backup_history = [f"获取备份历史失败: {e}"]
+    
+    # 获取环境变量
+    env_vars = get_env_vars()
+    
     return templates.TemplateResponse("index.html", {
         "request": request,
         "disk_space": disk_space,
@@ -61,35 +99,65 @@ def save_env_vars(env_vars):
         "env_vars": env_vars
     })
 
-# 配置页面@app.get("/config", response_class=HTMLResponse)async def config(request: Request):    env_vars = get_env_vars()    return templates.TemplateResponse("config.html", {
+# 配置页面
+@app.get("/config", response_class=HTMLResponse)
+async def config(request: Request):
+    env_vars = get_env_vars()
+    return templates.TemplateResponse("config.html", {
         "request": request,
         "env_vars": env_vars
     })
 
-# 保存配置@app.post("/save_config")async def save_config(request: Request, **form_data):    env_vars = get_env_vars()    
-    # 更新环境变量    for key, value in form_data.items():
+# 保存配置
+@app.post("/save_config")
+async def save_config(request: Request, **form_data):
+    env_vars = get_env_vars()
+    
+    # 更新环境变量
+    for key, value in form_data.items():
         if key in env_vars:
-            env_vars[key] = value    
-    # 保存环境变量    save_env_vars(env_vars)
+            env_vars[key] = value
+    
+    # 保存环境变量
+    save_env_vars(env_vars)
     
     return RedirectResponse("/", status_code=303)
 
-# 恢复页面@app.get("/restore", response_class=HTMLResponse)async def restore(request: Request):    # 获取备份历史    backup_history = []    try:        backup_dir = os.environ.get("BACKUP_DIR", "/backup")        if os.path.exists(backup_dir):            files = os.listdir(backup_dir)            for file in files:
+# 恢复页面
+@app.get("/restore", response_class=HTMLResponse)
+async def restore(request: Request):
+    # 获取备份历史
+    backup_history = []
+    try:
+        backup_dir = os.environ.get("BACKUP_DIR", "/backup")
+        if os.path.exists(backup_dir):
+            files = os.listdir(backup_dir)
+            for file in files:
                 if file.endswith(".zip"):
                     file_path = os.path.join(backup_dir, file)
                     stat = os.stat(file_path)
-                    size = os.path.getsize(file_path) / (1024 * 1024)  # 转换为 MB                    backup_history.append({
+                    size = os.path.getsize(file_path) / (1024 * 1024)  # 转换为 MB
+                    backup_history.append({
                         "name": file,
                         "size": f"{size:.2f} MB",
                         "mtime": datetime.datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
-                    })            backup_history.sort(key=lambda x: x["mtime"], reverse=True)    except Exception as e:        backup_history = [f"获取备份历史失败: {e}"]    
+                    })
+            backup_history.sort(key=lambda x: x["mtime"], reverse=True)
+    except Exception as e:
+        backup_history = [f"获取备份历史失败: {e}"]
+    
     return templates.TemplateResponse("restore.html", {
         "request": request,
         "backup_history": backup_history
     })
 
-# 执行恢复@app.post("/do_restore")async def do_restore(request: Request, backup_file: str = Form(...)):
+# 执行恢复
+@app.post("/do_restore")
+async def do_restore(request: Request, backup_file: str = Form(...)):
     try:
+        # 获取最新的环境变量
+        env_vars = get_env_vars()
+        
         # 停止 Vaultwarden 容器
         if client:
             vaultwarden_containers = client.containers.list(filters={"name": "vaultwarden"})
@@ -98,13 +166,13 @@ def save_env_vars(env_vars):
                 print(f"已停止 Vaultwarden 容器: {container.name}")
         
         # 解压恢复
-        backup_dir = os.environ.get("BACKUP_DIR", "/backup")
+        backup_dir = env_vars.get("BACKUP_DIR", "/backup")
         backup_path = os.path.join(backup_dir, backup_file)
-        data_dir = os.environ.get("DATA_DIR", "/vw_data")
+        data_dir = env_vars.get("DATA_DIR", "/vw_data")
         
         # 解压命令
-        if os.environ.get("ZIP_PASSWORD"):
-            unzip_cmd = f"unzip -P {os.environ['ZIP_PASSWORD']} -o {backup_path} -d {data_dir}"
+        if env_vars.get("ZIP_PASSWORD"):
+            unzip_cmd = f"unzip -P {env_vars['ZIP_PASSWORD']} -o {backup_path} -d {data_dir}"
         else:
             unzip_cmd = f"unzip -o {backup_path} -d {data_dir}"
         
@@ -125,7 +193,12 @@ def save_env_vars(env_vars):
             "error": f"恢复失败: {e}"
         })
 
-# 执行备份@app.post("/do_backup")async def do_backup(request: Request):    try:        # 执行备份脚本        subprocess.run(["/app/backup.sh"], check=True)
+# 执行备份
+@app.post("/do_backup")
+async def do_backup(request: Request):
+    try:
+        # 执行备份脚本
+        subprocess.run(["/app/backup.sh"], check=True)
         return RedirectResponse("/", status_code=303)
     except Exception as e:
         print(f"备份失败: {e}")
