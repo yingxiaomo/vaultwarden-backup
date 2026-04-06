@@ -114,7 +114,7 @@ services:
     
     healthcheck:
       # 检查 Web 面板是否正常运行
-      test: ["CMD", "curl", "-f", "http://localhost:9876/" ]
+      test: ["CMD", "curl", "-f", "http://localhost:9876/health" ]
       interval: 30s
       timeout: 10s
       retries: 3

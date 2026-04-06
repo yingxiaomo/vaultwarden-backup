@@ -53,24 +53,30 @@ def get_env_vars():
     # 如果有 config.yaml，直接读取
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-            return yaml.safe_load(f)
-            
-    # 如果没有，从现有的 env.sh 或者 os.environ 中提取默认值，并创建 config.yaml
-    env_vars = {}
-    if os.path.exists(ENV_FILE):
-        with open(ENV_FILE, "r") as f:
-            for line in f:
-                if line.startswith("export "):
-                    key, value = line.strip().split("=", 1)
-                    key = key[7:]
-                    if value.startswith('"') and value.endswith('"') or value.startswith("'") and value.endswith("'"):
-                        value = value[1:-1]
-                    env_vars[key] = value
+            env_vars = yaml.safe_load(f)
+    else:
+        # 如果没有，从现有的 env.sh 或者 os.environ 中提取默认值
+        env_vars = {}
+        if os.path.exists(ENV_FILE):
+            with open(ENV_FILE, "r") as f:
+                for line in f:
+                    if line.startswith("export "):
+                        key, value = line.strip().split("=", 1)
+                        key = key[7:]
+                        if value.startswith('"') and value.endswith('"') or value.startswith("'") and value.endswith("'"):
+                            value = value[1:-1]
+                        env_vars[key] = value
+        
+        # 第一次运行，把读取到的默认值保存为 YAML
+        os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+            yaml.dump(env_vars, f, default_flow_style=False, allow_unicode=True, indent=2)
     
-    # 第一次运行，把读取到的默认值保存为 YAML
-    os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
-    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-        yaml.dump(env_vars, f, default_flow_style=False, allow_unicode=True, indent=2)
+    # 确保 Web 面板的账号密码始终在字典里，以便前端渲染
+    if "WEB_USER" not in env_vars:
+        env_vars["WEB_USER"] = "admin"
+    if "WEB_PASS" not in env_vars:
+        env_vars["WEB_PASS"] = "admin"
         
     return env_vars
 
@@ -281,6 +287,11 @@ async def get_backup_logs():
             return {"logs": "日志文件不存在，尚未执行备份任务"}
     except Exception as e:
         return {"logs": f"读取日志失败: {e}"}
+
+# 健康检查接口（不需要身份验证）
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
 
 if __name__ == "__main__":
     import uvicorn
