@@ -356,7 +356,7 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
                         ]
                         # 3. 使用 Python 的文件流处理重定向，避开 Shell 风险
                         with open(sql_file, "r") as f:
-                            subprocess.run(mysql_cmd, stdin=f, check=True)
+                            subprocess.run(mysql_cmd, stdin=f, check=True) # 直接传入列表，不使用 shell=True
                         print("✅ MySQL 数据库导入成功")
                     else:
                         print("⚠️ MySQL 数据库信息不完整，跳过导入")
