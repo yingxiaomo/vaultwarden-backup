@@ -51,7 +51,7 @@ check_disk_space() {
     
     # 使用 df -Pm 以 MB 为单位输出，-P 参数确保 POSIX 标准格式，避免路径太长导致换行
     # 检查备份目录所在分区的可用空间
-    local free_space_mb=$(df -Pm "$dir" | awk 'END{print $(NF-2)}' | tr -d '%')
+    local free_space_mb=$(df -Pm "$dir" | awk 'END{print $(NF-2)}' | sed 's/[^0-9]//g')
     
     # 确保获取到的是有效数字，防止 df 失败导致 bash 报错
     if ! [[ "$free_space_mb" =~ ^[0-9]+$ ]]; then
