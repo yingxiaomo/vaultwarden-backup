@@ -102,13 +102,11 @@ WEB_USER: admin
 WEB_PASS: admin"""
 
     # 2. [核心魔法]：动态吸收 docker-compose 传进来的环境变量
-    import re
     for key, value in os.environ.items():
         if key in ["PATH", "HOSTNAME", "PWD", "HOME", "SHLVL", "TERM"]:
             continue
         if key.isupper():
             # 同样使用 json.dumps，防止外部环境变量里含有特殊的 YAML 字符
-            import json
             safe_value = json.dumps(value)
             
             pattern = rf'^#?\s*({key}):.*$'
@@ -281,13 +279,18 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         
         # 停止 Vaultwarden 容器
         if client:
-            vaultwarden_containers = client.containers.list(filters={"name": "vaultwarden"})
+            # 这里的过滤器可能会抓到包含 vaultwarden 名字的所有容器（包括 backup 自己）
+            all_found = client.containers.list(filters={"name": "vaultwarden"})
+            # 过滤出真正的目标（精准匹配，且排除掉自己）
+            vaultwarden_containers = [c for c in all_found if c.name == "vaultwarden" and c.id != os.environ.get("HOSTNAME")]
+            
             for container in vaultwarden_containers:
                 container.stop()
                 print(f"已停止 Vaultwarden 容器: {container.name}")
         
         # 解压恢复
         backup_dir = env_vars.get("BACKUP_DIR", "/backup")
+        backup_file = os.path.basename(backup_file) # 核心安全防线：强制只保留文件名，丢弃所有路径信息
         backup_path = os.path.join(backup_dir, backup_file)
         
         # 使用列表形式调用，彻底杜绝空格和特殊字符引起的 Bug
@@ -369,8 +372,6 @@ async def do_setup(request: Request, username: str = Form(...), password: str = 
         config_content = f.read()
     
     # 查找并替换 WEB_USER 和 WEB_PASS
-    import re
-    import json
     
     # 用 json.dumps 完美包裹字符串，变成 "Abcd@123#"，彻底杜绝 YAML 解析错误
     safe_user = json.dumps(username)
