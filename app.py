@@ -8,6 +8,7 @@ import yaml
 import datetime
 import docker
 import hashlib
+import shlex
 
 # 初始化 FastAPI 应用
 app = FastAPI()
@@ -109,7 +110,7 @@ WEB_PASS: admin"""
             # 寻找模板里对应的行（无论是否被 # 注释），将其激活并替换
             pattern = rf'^#?\s*({key}):.*$'
             if re.search(pattern, config_content, flags=re.MULTILINE):
-                config_content = re.sub(pattern, f'{key}: {safe_value}', config_content, flags=re.MULTILINE)
+                config_content = re.sub(pattern, lambda _: f'{key}: {safe_value}', config_content, flags=re.MULTILINE)
             else:
                 config_content += f'\n{key}: {safe_value}'
     
@@ -139,7 +140,9 @@ async def startup_event():
     with open(ENV_FILE, "w", encoding="utf-8") as f:
         for key, value in env_vars.items():
             if value is not None:
-                f.write(f"export {key}='{value}'\n")
+                # 使用 shlex.quote，不用我们自己再加单引号了，它会自动处理所有特殊符号！
+                safe_val = shlex.quote(str(value))
+                f.write(f"export {key}={safe_val}\n")
     
     # 强制刷新一次底层 Linux 的 Crontab 定时任务
     cron_schedule = env_vars.get("CRON_SCHEDULE", "0 2 * * *")
@@ -181,28 +184,15 @@ async def root(request: Request):
         "env_vars": env_vars
     })
 
-# 配置页面 (升级版：直接返回纯文本，保留注释)
+# 配置页面 (极简版)
 @app.get("/config", response_class=HTMLResponse, dependencies=[Depends(verify_auth)])
 async def config(request: Request):
     config_file_path = "/app/config/config.yaml"
-    config_content = ""
     
-    if os.path.exists(config_file_path):
-        with open(config_file_path, "r", encoding="utf-8") as f:
-            config_content = f.read()
+    # 因为有 startup_event，此时文件百分之百存在，直接读取！
+    with open(config_file_path, "r", encoding="utf-8") as f:
+        config_content = f.read()
         
-        # 检查配置文件是否包含注释
-        if "#" not in config_content:
-            # 如果没有注释，重新初始化配置文件
-            get_env_vars()
-            with open(config_file_path, "r", encoding="utf-8") as f:
-                config_content = f.read()
-    else:
-        # 如果文件还不存在，触发一下初始化再读取
-        get_env_vars()
-        with open(config_file_path, "r", encoding="utf-8") as f:
-            config_content = f.read()
-            
     return templates.TemplateResponse(request=request, name="config.html", context={
         "request": request,
         "config_content": config_content
@@ -228,12 +218,14 @@ async def save_config(request: Request, yaml_content: str = Form(...)):
     with open(config_file_path, "w", encoding="utf-8") as f:
         f.write(yaml_content)
     
-    # 3. 翻译并同步生成底层的 env.sh
+    # 生成 env.sh
     env_file_path = "/app/env.sh"
     with open(env_file_path, "w", encoding="utf-8") as f:
         for key, value in env_vars.items():
-            if value is not None:  # 防止空值报错
-                f.write(f"export {key}='{value}'\n")
+            if value is not None:
+                # 使用 shlex.quote，不用我们自己再加单引号了，它会自动处理所有特殊符号！
+                safe_val = shlex.quote(str(value))
+                f.write(f"export {key}={safe_val}\n")
     
     # 4. 实时刷新 Linux 系统的定时任务 (Crontab)
     cron_schedule = env_vars.get("CRON_SCHEDULE", "0 2 * * *")
@@ -373,8 +365,8 @@ async def do_setup(request: Request, username: str = Form(...), password: str = 
     
     # 查找并替换 WEB_USER 和 WEB_PASS (兼容已被注释的情况)
     import re
-    config_content = re.sub(r'^#?\s*WEB_USER:.*$', f'WEB_USER: {username}', config_content, flags=re.MULTILINE)
-    config_content = re.sub(r'^#?\s*WEB_PASS:.*$', f'WEB_PASS: {password}', config_content, flags=re.MULTILINE)
+    config_content = re.sub(r'^#?\s*WEB_USER:.*$', lambda _: f'WEB_USER: {username}', config_content, flags=re.MULTILINE)
+    config_content = re.sub(r'^#?\s*WEB_PASS:.*$', lambda _: f'WEB_PASS: {password}', config_content, flags=re.MULTILINE)
     
     # 如果模板里压根没这两行，追加到末尾
     if 'WEB_USER:' not in config_content:
@@ -390,7 +382,9 @@ async def do_setup(request: Request, username: str = Form(...), password: str = 
     with open(env_file_path, "w", encoding="utf-8") as f:
         for key, value in env_vars.items():
             if value is not None:
-                f.write(f"export {key}='{value}'\n")
+                # 使用 shlex.quote，不用我们自己再加单引号了，它会自动处理所有特殊符号！
+                safe_val = shlex.quote(str(value))
+                f.write(f"export {key}={safe_val}\n")
     
     # 生成会话令牌
     session_token = hashlib.sha256((username + password).encode()).hexdigest()
