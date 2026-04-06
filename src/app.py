@@ -5,12 +5,16 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import os
 import shlex
+import sys
+
+# 添加项目根目录到sys.path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 导入配置管理模块
 from config import get_env_vars, save_env_vars, create_default_config
 
 # 导入核心共享模块
-from core import RequiresSetupException, RequiresLoginException, verify_auth
+from src.core import RequiresSetupException, RequiresLoginException, verify_auth
 
 # 导入路由模块
 from routes import auth_router, backup_router, config_router, restore_router, setup_router, health_router
@@ -36,7 +40,6 @@ async def lifespan(app: FastAPI):
         print("✅ 系统已初始化，执行配置同步...")
         
         # 同步 env.sh
-        import os
         env_file = "/app/env.sh"
         os.makedirs(os.path.dirname(env_file), exist_ok=True)
         with open(env_file, "w", encoding="utf-8") as f:
@@ -48,14 +51,13 @@ async def lifespan(app: FastAPI):
         # 强制刷新 Crontab
         import tempfile
         cron_schedule = env_vars.get("CRON_SCHEDULE", "0 2 * * *")
-        cron_cmd = f"{cron_schedule} . /app/env.sh && /app/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2\n"
+        cron_cmd = f"{cron_schedule} . /app/env.sh && /app/lib/scripts/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2\n"
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             f.write(cron_cmd)
             temp_file_path = f.name
         try:
             run_shell_command(["crontab", temp_file_path])
         finally:
-            import os
             os.unlink(temp_file_path)
         print("✅ 配置同步完成！底层守护进程已就绪。")
     else:

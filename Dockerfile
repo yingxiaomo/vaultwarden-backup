@@ -19,15 +19,14 @@ RUN apk add --no-cache \
 
 RUN mkdir -p /app /vw_data /backup /config/rclone
 
-COPY backup.sh /app/backup.sh
-COPY entrypoint.sh /app/entrypoint.sh
-COPY app.py /app/app.py
+COPY lib /app/lib
+COPY src /app/src
 COPY templates /app/templates
 COPY static /app/static
 COPY config.yaml.example /app/config.yaml.example
 
-RUN chmod +x /app/backup.sh /app/entrypoint.sh
+RUN chmod +x /app/lib/scripts/backup.sh /app/lib/scripts/entrypoint.sh
 
 WORKDIR /app
 
-CMD ["/app/entrypoint.sh"]
+CMD ["/app/lib/scripts/entrypoint.sh"]

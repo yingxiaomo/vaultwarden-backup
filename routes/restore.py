@@ -6,7 +6,7 @@ import os
 import datetime
 
 from config import get_env_vars
-from core import verify_auth
+from src.core import verify_auth
 from services.backup import BackupService
 from services.restore import RestoreService
 
@@ -19,8 +19,7 @@ router = APIRouter()
 @router.get("/restore", response_class=HTMLResponse, dependencies=[Depends(verify_auth)])
 async def restore(request: Request):
     # 获取备份历史
-    backup_service = BackupService()
-    backup_history = backup_service.get_backup_history()
+    backup_history = BackupService.get_backup_history()
     
     return templates.TemplateResponse(request=request, name="restore.html", context={
         "request": request,
@@ -30,10 +29,9 @@ async def restore(request: Request):
 # 执行恢复
 @router.post("/do_restore", dependencies=[Depends(verify_auth)])
 async def do_restore(request: Request, backup_file: str = Form(...)):
-    restore_service = RestoreService()
     try:
         # 执行恢复
-        restore_service.restore_backup(backup_file)
+        RestoreService.restore_backup(backup_file)
         return RedirectResponse("/", status_code=303)
     except Exception as e:
         print(f"恢复失败: {e}")

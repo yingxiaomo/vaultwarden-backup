@@ -6,7 +6,7 @@ import os
 import yaml
 
 from config import get_env_vars, save_env_vars
-from core import verify_auth
+from src.core import verify_auth
 
 # 初始化模板
 templates = Jinja2Templates(directory="templates")

@@ -4,12 +4,13 @@ import subprocess
 import shutil
 
 from config import get_env_vars
+from utils.docker import get_vaultwarden_containers
 
 class RestoreService:
     """恢复服务"""
     
     @staticmethod
-    def restore_backup(backup_file, client):
+    def restore_backup(backup_file):
         """恢复备份"""
         try:
             # 获取最新的环境变量
@@ -21,18 +22,10 @@ class RestoreService:
                 raise Exception(f"数据目录 {data_dir} 不存在，请检查挂载是否正确")
             
             # 停止 Vaultwarden 容器
-            vaultwarden_containers = []
-            if client:
-                # 查找 Vaultwarden 容器
-                all_found = client.containers.list(filters={"name": "vaultwarden"})
-                # 获取当前容器的短 ID (HOSTNAME)
-                current_id = os.environ.get("HOSTNAME", "")
-                # 修正：使用包含匹配，支持 Docker Compose 自动生成的容器名称
-                vaultwarden_containers = [c for c in all_found if "vaultwarden" in c.name and not c.id.startswith(current_id)]
-                
-                for container in vaultwarden_containers:
-                    container.stop()
-                    print(f"已停止 Vaultwarden 容器: {container.name}")
+            vaultwarden_containers = get_vaultwarden_containers()
+            for container in vaultwarden_containers:
+                container.stop()
+                print(f"已停止 Vaultwarden 容器: {container.name}")
             
             # 解压恢复
             backup_dir = env_vars.get("BACKUP_DIR", "/backup")
@@ -172,10 +165,10 @@ class RestoreService:
                     print("⚠️ 未找到 SQL 文件，跳过数据库导入")
             
             # 启动 Vaultwarden 容器
-            if client:
-                for container in vaultwarden_containers:
-                    container.start()
-                    print(f"已启动 Vaultwarden 容器: {container.name}")
+            vaultwarden_containers = get_vaultwarden_containers()
+            for container in vaultwarden_containers:
+                container.start()
+                print(f"已启动 Vaultwarden 容器: {container.name}")
             
             # 清理临时备份
             temp_backup_dir = os.path.join(data_dir, "temp_backup")

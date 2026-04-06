@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 import hashlib
 
 from config import get_env_vars
-from core import verify_auth, RequiresLoginException, RequiresSetupException
+from src.core import verify_auth, RequiresLoginException, RequiresSetupException
 
 # 初始化模板
 templates = Jinja2Templates(directory="templates")
