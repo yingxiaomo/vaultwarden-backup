@@ -232,17 +232,30 @@ fi
 
 # [核心修复]：分两步打包，既保留附件目录结构，又防止数据库文件出现“路径套娃”
 echo "正在打包数据目录..."
+
+# 为数据库文件创建一个固定的临时名称，方便恢复时精准匹配
+TEMP_SQL_FILE="${BACKUP_DIR}/db_dump_temp.sql"
+if [ "$DB_TYPE" = "sqlite" ]; then
+    TEMP_SQL_FILE="${BACKUP_DIR}/db_dump_temp.db"
+fi
+
+# 复制数据库文件到临时文件
+cp "$SQL_FILE" "$TEMP_SQL_FILE"
+
 if [ -z "$ZIP_PASSWORD" ]; then
     # 非加密打包
     zip -r -q "$ZIP_FILE" . -x "*.db" "*.sql" # 打包当前目录，排除可能存在的旧备份
     echo "正在追加数据库备份..."
-    zip -j -q "$ZIP_FILE" "$SQL_FILE" # 使用 -j 仅针对数据库文件，使其位于压缩包根目录
+    zip -j -q "$ZIP_FILE" "$TEMP_SQL_FILE" # 使用 -j 仅针对数据库文件，使其位于压缩包根目录
 else
     # 加密打包
     zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . -x "*.db" "*.sql" # 打包当前目录，排除可能存在的旧备份
     echo "正在追加数据库备份..."
-    zip -j -P "$ZIP_PASSWORD" -q "$ZIP_FILE" "$SQL_FILE" # 使用 -j 仅针对数据库文件，使其位于压缩包根目录
+    zip -j -P "$ZIP_PASSWORD" -q "$ZIP_FILE" "$TEMP_SQL_FILE" # 使用 -j 仅针对数据库文件，使其位于压缩包根目录
 fi
+
+# 清理临时文件
+rm -f "$TEMP_SQL_FILE"
 
 # 检查打包是否成功
 if [ $? -ne 0 ]; then

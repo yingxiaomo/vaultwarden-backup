@@ -306,6 +306,21 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
                 container.stop()
                 print(f"已停止 Vaultwarden 容器: {container.name}")
         
+        # [核心修复]：在恢复前创建临时备份，以便在恢复失败时能够回滚
+        temp_backup_dir = os.path.join(data_dir, "temp_backup")
+        if os.path.exists(data_dir):
+            print("正在创建恢复前的临时备份...")
+            os.makedirs(temp_backup_dir, exist_ok=True)
+            # 备份数据目录中的所有文件
+            import shutil
+            for item in os.listdir(data_dir):
+                item_path = os.path.join(data_dir, item)
+                if item != "temp_backup" and os.path.isdir(item_path):
+                    shutil.copytree(item_path, os.path.join(temp_backup_dir, item))
+                elif item != "temp_backup" and os.path.isfile(item_path):
+                    shutil.copy2(item_path, os.path.join(temp_backup_dir, item))
+            print("✅ 临时备份创建成功")
+        
         # 解压恢复
         backup_dir = env_vars.get("BACKUP_DIR", "/backup")
         backup_file = os.path.basename(backup_file) # 核心安全防线：强制只保留文件名，丢弃所有路径信息
@@ -328,10 +343,9 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         if db_type in ["mysql", "postgres"]:
             print(f"正在处理 {db_type} 数据库恢复...")
             
-            # 查找解压后的 SQL 文件
-            sql_files = glob.glob(f"{data_dir}/*.sql")
-            if sql_files:
-                sql_file = sql_files[0]
+            # 查找解压后的 SQL 文件（使用固定的临时文件名，避免匹配错误的旧文件）
+            sql_file = os.path.join(data_dir, "db_dump_temp.sql")
+            if os.path.exists(sql_file):
                 print(f"找到 SQL 文件: {sql_file}")
                 
                 if db_type == "mysql":
@@ -396,9 +410,42 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
                 container.start()
                 print(f"已启动 Vaultwarden 容器: {container.name}")
         
+        # 清理临时备份
+        temp_backup_dir = os.path.join(data_dir, "temp_backup")
+        if os.path.exists(temp_backup_dir):
+            import shutil
+            shutil.rmtree(temp_backup_dir)
+            print("✅ 临时备份已清理")
+        
         return RedirectResponse("/", status_code=303)
     except Exception as e:
         print(f"恢复失败: {e}")
+        # 尝试回滚到临时备份
+        temp_backup_dir = os.path.join(data_dir, "temp_backup")
+        if os.path.exists(temp_backup_dir):
+            print("正在回滚到恢复前的状态...")
+            try:
+                import shutil
+                # 清理当前数据目录（除了临时备份）
+                for item in os.listdir(data_dir):
+                    item_path = os.path.join(data_dir, item)
+                    if item != "temp_backup" and os.path.isdir(item_path):
+                        shutil.rmtree(item_path)
+                    elif item != "temp_backup" and os.path.isfile(item_path):
+                        os.remove(item_path)
+                # 从临时备份恢复
+                for item in os.listdir(temp_backup_dir):
+                    item_path = os.path.join(temp_backup_dir, item)
+                    dest_path = os.path.join(data_dir, item)
+                    if os.path.isdir(item_path):
+                        shutil.copytree(item_path, dest_path)
+                    else:
+                        shutil.copy2(item_path, dest_path)
+                # 清理临时备份
+                shutil.rmtree(temp_backup_dir)
+                print("✅ 回滚成功，系统已恢复到恢复前的状态")
+            except Exception as rollback_error:
+                print(f"回滚失败: {rollback_error}")
         return templates.TemplateResponse(request=request, name="error.html", context={
             "request": request,
             "error": f"恢复失败: {e}"
