@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   vaultwarden-backup:
-    # 使用官方镜像
-    image: yingxiaomo/vaultwarden-backup:latest
+    # 使用开发分支镜像
+    image: yingxiaomo/vaultwarden-backup:dev
     container_name: vaultwarden_backup
     # 容器重启策略：失败时重启
     restart: on-failure
