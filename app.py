@@ -2,13 +2,12 @@ from fastapi import FastAPI, Request, Form, Depends, BackgroundTasks, HTTPExcept
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import subprocess
 import os
 import yaml
 import datetime
 import docker
-import secrets
+import hashlib
 
 # 初始化 FastAPI 应用
 app = FastAPI()
@@ -26,27 +25,42 @@ except Exception as e:
     print(f"Docker 连接失败: {e}")
     client = None
 
-# 身份验证配置
-security = HTTPBasic()
-
-# 验证凭据
-def verify_credentials(credentials: HTTPBasicCredentials = Depends(security)):
-    # 从配置中获取用户名和密码
-    env_vars = get_env_vars()
-    correct_username = secrets.compare_digest(credentials.username, env_vars.get("WEB_USER", "admin"))
-    correct_password = secrets.compare_digest(credentials.password, env_vars.get("WEB_PASS", "admin"))
-    if not (correct_username and correct_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    return credentials
-
-import yaml
-
 CONFIG_FILE = "/app/config/config.yaml"
 ENV_FILE = "/app/env.sh"
+
+# 定义鉴权失败的拦截异常
+class RequiresSetupException(Exception): pass
+class RequiresLoginException(Exception): pass
+
+# 拦截器：如果没初始化，跳转到 setup
+@app.exception_handler(RequiresSetupException)
+async def requires_setup_handler(request: Request, exc: RequiresSetupException):
+    return RedirectResponse(url="/setup", status_code=303)
+
+# 拦截器：如果没登录，跳转到 login
+@app.exception_handler(RequiresLoginException)
+async def requires_login_handler(request: Request, exc: RequiresLoginException):
+    return RedirectResponse(url="/login", status_code=303)
+
+# 核心安全守卫 (取代了旧的 HTTPBasic)
+def verify_auth(request: Request):
+    env_vars = get_env_vars()
+    
+    # 1. 检查是否是首次运行（未设置账号密码）
+    if not env_vars.get("WEB_USER") or not env_vars.get("WEB_PASS"):
+        raise RequiresSetupException()
+    
+    # 2. 检查会话 Cookie 是否合法
+    session_token = request.cookies.get("auth_token")
+    if not session_token:
+        raise RequiresLoginException()
+    
+    # 3. 验证会话令牌
+    expected_token = hashlib.sha256((env_vars.get("WEB_USER") + env_vars.get("WEB_PASS")).encode()).hexdigest()
+    if session_token != expected_token:
+        raise RequiresLoginException()
+    
+    return True
 
 # 读取配置：优先读 config.yaml，如果没有则尝试从系统的环境变量中初始化一份默认值
 def get_env_vars():
@@ -86,12 +100,6 @@ def get_env_vars():
             with open(CONFIG_FILE, "w", encoding="utf-8") as f:
                 yaml.dump(env_vars, f, default_flow_style=False, allow_unicode=True, indent=2)
     
-    # 确保 Web 面板的账号密码始终在字典里，以便前端渲染
-    if "WEB_USER" not in env_vars:
-        env_vars["WEB_USER"] = "admin"
-    if "WEB_PASS" not in env_vars:
-        env_vars["WEB_PASS"] = "admin"
-        
     return env_vars
 
 # 保存配置：同时保存为 YAML 和 Shell 脚本
@@ -111,7 +119,7 @@ def run_backup_script():
     subprocess.run("source /app/env.sh && /app/backup.sh", shell=True, executable="/bin/bash")
 
 # 主页面
-@app.get("/", response_class=HTMLResponse, dependencies=[Depends(verify_credentials)])
+@app.get("/", response_class=HTMLResponse, dependencies=[Depends(verify_auth)])
 async def root(request: Request):
     # 获取磁盘空间
     try:
@@ -167,7 +175,7 @@ async def root(request: Request):
     })
 
 # 配置页面 (升级版：直接返回纯文本，保留注释)
-@app.get("/config", response_class=HTMLResponse, dependencies=[Depends(verify_credentials)])
+@app.get("/config", response_class=HTMLResponse, dependencies=[Depends(verify_auth)])
 async def config(request: Request):
     config_file_path = "/app/config/config.yaml"
     config_content = ""
@@ -187,7 +195,7 @@ async def config(request: Request):
     })
 
 # 保存配置 (升级版：原样保存 YAML，防止注释丢失，并同步生成 env.sh)
-@app.post("/save_config", dependencies=[Depends(verify_credentials)])
+@app.post("/save_config", dependencies=[Depends(verify_auth)])
 async def save_config(request: Request, yaml_content: str = Form(...)):
     config_file_path = "/app/config/config.yaml"
     
@@ -223,7 +231,7 @@ async def save_config(request: Request, yaml_content: str = Form(...)):
     return RedirectResponse("/", status_code=303)
 
 # 恢复页面
-@app.get("/restore", response_class=HTMLResponse, dependencies=[Depends(verify_credentials)])
+@app.get("/restore", response_class=HTMLResponse, dependencies=[Depends(verify_auth)])
 async def restore(request: Request):
     # 获取备份历史
     backup_history = []
@@ -251,7 +259,7 @@ async def restore(request: Request):
     })
 
 # 执行恢复
-@app.post("/do_restore", dependencies=[Depends(verify_credentials)])
+@app.post("/do_restore", dependencies=[Depends(verify_auth)])
 async def do_restore(request: Request, backup_file: str = Form(...)):
     try:
         # 获取最新的环境变量
@@ -298,7 +306,7 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
         })
 
 # 执行备份
-@app.post("/do_backup", dependencies=[Depends(verify_credentials)])
+@app.post("/do_backup", dependencies=[Depends(verify_auth)])
 async def do_backup(request: Request, background_tasks: BackgroundTasks):
     try:
         # 添加后台任务
@@ -313,7 +321,7 @@ async def do_backup(request: Request, background_tasks: BackgroundTasks):
         })
 
 # 获取备份日志
-@app.get("/logs", dependencies=[Depends(verify_credentials)])
+@app.get("/logs", dependencies=[Depends(verify_auth)])
 async def get_backup_logs():
     log_file = "/app/config/backup.log"
     try:
@@ -328,6 +336,85 @@ async def get_backup_logs():
             return {"logs": "日志文件不存在，尚未执行备份任务"}
     except Exception as e:
         return {"logs": f"读取日志失败: {e}"}
+
+# 初始化向导页面
+@app.get("/setup")
+async def setup(request: Request):
+    env_vars = get_env_vars()
+    # 如果已经设置了账号密码，直接跳转到登录页
+    if env_vars.get("WEB_USER") and env_vars.get("WEB_PASS"):
+        return RedirectResponse(url="/login", status_code=303)
+    return templates.TemplateResponse(request=request, name="setup.html", context={
+        "request": request
+    })
+
+# 处理初始化表单提交
+@app.post("/do_setup")
+async def do_setup(request: Request, username: str = Form(...), password: str = Form(...)):
+    # 读取现有配置
+    env_vars = get_env_vars()
+    
+    # 更新账号密码
+    env_vars["WEB_USER"] = username
+    env_vars["WEB_PASS"] = password
+    
+    # 保存配置
+    config_file_path = "/app/config/config.yaml"
+    os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
+    with open(config_file_path, "w", encoding="utf-8") as f:
+        yaml.dump(env_vars, f, default_flow_style=False, allow_unicode=True, indent=2)
+    
+    # 生成 env.sh
+    env_file_path = "/app/env.sh"
+    with open(env_file_path, "w", encoding="utf-8") as f:
+        for key, value in env_vars.items():
+            if value is not None:
+                f.write(f"export {key}='{value}'\n")
+    
+    # 生成会话令牌
+    session_token = hashlib.sha256((username + password).encode()).hexdigest()
+    
+    # 重定向到主页，并设置会话 Cookie
+    response = RedirectResponse(url="/", status_code=303)
+    response.set_cookie("auth_token", session_token, httponly=True, max_age=86400)  # 24小时
+    return response
+
+# 登录页面
+@app.get("/login")
+async def login(request: Request, error: str = None):
+    env_vars = get_env_vars()
+    # 如果未设置账号密码，跳转到初始化页面
+    if not env_vars.get("WEB_USER") or not env_vars.get("WEB_PASS"):
+        return RedirectResponse(url="/setup", status_code=303)
+    return templates.TemplateResponse(request=request, name="login.html", context={
+        "request": request,
+        "error": error
+    })
+
+# 处理登录表单提交
+@app.post("/do_login")
+async def do_login(request: Request, username: str = Form(...), password: str = Form(...)):
+    env_vars = get_env_vars()
+    
+    # 验证用户名密码
+    if username == env_vars.get("WEB_USER") and password == env_vars.get("WEB_PASS"):
+        # 生成会话令牌
+        session_token = hashlib.sha256((username + password).encode()).hexdigest()
+        
+        # 重定向到主页，并设置会话 Cookie
+        response = RedirectResponse(url="/", status_code=303)
+        response.set_cookie("auth_token", session_token, httponly=True, max_age=86400)  # 24小时
+        return response
+    else:
+        # 登录失败，返回错误信息
+        return RedirectResponse(url="/login?error=用户名或密码错误", status_code=303)
+
+# 登出
+@app.get("/logout")
+async def logout(request: Request):
+    response = RedirectResponse(url="/login", status_code=303)
+    response.delete_cookie("auth_token")
+    return response
 
 # 健康检查接口（不需要身份验证）
 @app.get("/health")
