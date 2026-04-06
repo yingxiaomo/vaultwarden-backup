@@ -119,51 +119,35 @@ http://localhost:9876
 
 #### 4.4 config.json 示例
 
-以下是一个完整的 `config.json` 配置示例，包含所有可用的配置项：
+以下是一个完整的 `config.json` 配置示例，包含所有可用的配置项和详细说明：
 
 ```json
 {
-    "DB_TYPE": "sqlite",
-    "ZIP_PASSWORD": "your_secure_password",
-    "CRON_SCHEDULE": "0 2 * * *",
-    "RUN_ON_STARTUP": "true",
-    "LOCAL_BACKUP_KEEP_DAYS": "15",
-    "RCLONE_KEEP_DAYS": "30",
-    "BACKUP_PREFIX": "vaultwarden_backup",
-    "RCLONE_REMOTE": "my_onedrive:/vaultwarden_backup",
-    "APPRISE_URL": "tgram://bottoken/ChatID",
-    "APPRISE_API_URL": "http://apprise:8000",
-    "DATA_DIR": "/vw_data",
-    "BACKUP_DIR": "/backup",
-    "DB_HOST": "db",
-    "DB_PORT": "3306",
-    "DB_USER": "vaultwarden",
-    "DB_PASSWORD": "your_db_password",
-    "DB_NAME": "vaultwarden",
-    "HTTP_PROXY": "http://192.168.1.100:7890",
-    "HTTPS_PROXY": "http://192.168.1.100:7890",
-    "ALL_PROXY": "socks5://192.168.1.100:7890",
-    "TZ": "Asia/Shanghai"
+    "DB_TYPE": "sqlite",             // 数据库类型：sqlite、mysql、postgres
+    "ZIP_PASSWORD": "your_secure_password",  // 压缩包加密密码，不设置则为非加密打包
+    "CRON_SCHEDULE": "0 2 * * *",    // Cron 表达式，默认每天凌晨 2 点执行
+    "RUN_ON_STARTUP": "true",         // 容器启动时是否立即执行备份
+    "LOCAL_BACKUP_KEEP_DAYS": "15",   // 本地备份保留天数
+    "RCLONE_KEEP_DAYS": "30",        // 远端备份保留天数
+    "BACKUP_PREFIX": "vaultwarden_backup",  // 备份文件前缀
+    "RCLONE_REMOTE": "my_onedrive:/vaultwarden_backup",  // Rclone 远程路径
+    "APPRISE_URL": "tgram://bottoken/ChatID",  // Apprise 通知 URL
+    "APPRISE_API_URL": "http://apprise:8000",  // 独立 Apprise 服务 API 地址
+    "DATA_DIR": "/vw_data",           // Vaultwarden 数据目录
+    "BACKUP_DIR": "/backup",          // 本地备份目录
+    "DB_HOST": "db",                  // 数据库主机地址（仅 MySQL/PostgreSQL）
+    "DB_PORT": "3306",                // 数据库端口（MySQL: 3306, PostgreSQL: 5432）
+    "DB_USER": "vaultwarden",         // 数据库用户名（仅 MySQL/PostgreSQL）
+    "DB_PASSWORD": "your_db_password",  // 数据库密码（仅 MySQL/PostgreSQL）
+    "DB_NAME": "vaultwarden",         // 数据库名称（仅 MySQL/PostgreSQL）
+    "HTTP_PROXY": "http://192.168.1.100:7890",  // HTTP 代理地址
+    "HTTPS_PROXY": "http://192.168.1.100:7890",  // HTTPS 代理地址
+    "ALL_PROXY": "socks5://192.168.1.100:7890",  // SOCKS5 代理地址
+    "TZ": "Asia/Shanghai"             // 时区设置
 }
 ```
 
-**配置说明：**
-
-- **DB_TYPE**：数据库类型，支持 `sqlite`、`mysql`、`postgres`
-- **ZIP_PASSWORD**：压缩包加密密码，不设置则为非加密打包
-- **CRON_SCHEDULE**：Cron 表达式，默认每天凌晨 2 点执行
-- **RUN_ON_STARTUP**：容器启动时是否立即执行备份
-- **LOCAL_BACKUP_KEEP_DAYS**：本地备份保留天数
-- **RCLONE_KEEP_DAYS**：远端备份保留天数
-- **BACKUP_PREFIX**：备份文件前缀
-- **RCLONE_REMOTE**：Rclone 远程路径
-- **APPRISE_URL**：Apprise 通知 URL
-- **APPRISE_API_URL**：独立 Apprise 服务 API 地址
-- **DATA_DIR**：Vaultwarden 数据目录
-- **BACKUP_DIR**：本地备份目录
-- **DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME**：数据库连接信息（仅 MySQL/PostgreSQL）
-- **HTTP_PROXY/HTTPS_PROXY/ALL_PROXY**：网络代理设置
-- **TZ**：时区设置
+**注意：** 以上示例中的注释（// 开头的部分）是为了说明配置项的作用，实际使用时请移除这些注释，因为标准 JSON 格式不支持注释。
 
 ## ⚙️ 环境变量说明 (Environment Variables)
 
