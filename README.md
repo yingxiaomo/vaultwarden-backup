@@ -5,6 +5,15 @@
 
 市面上已经有很多现成的备份项目了，但是他们都是大而全，搞的太复杂了，我需要的只是一个简单的 Vaultwarden 备份解决方案，于是就有了这个东西，它支持 SQLite、MySQL 和 PostgreSQL 数据库，并集成了 Apprise 消息通知和 Rclone 云端同步功能。
 
+## 🔐 默认账号密码
+
+- **默认用户名**：admin
+- **默认密码**：admin
+
+您可以通过以下方式修改账号密码：
+1. **通过 Web 面板**：登录后进入配置页面，修改 `WEB_USER` 和 `WEB_PASS` 配置项
+2. **直接修改配置文件**：编辑 `./config/config.yaml` 文件，修改 `WEB_USER` 和 `WEB_PASS` 配置项
+
 ## ✨ 核心特性 (Features)
 
 - **多数据库支持**：完美兼容 SQLite (默认)、MySQL/MariaDB 和 PostgreSQL。
