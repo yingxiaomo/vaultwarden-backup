@@ -340,7 +340,8 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
             # 2. 移动所有文件到临时备份目录
             for item in os.listdir(data_dir):
                 item_path = os.path.join(data_dir, item)
-                if item != "temp_backup":
+                # 核心修复：排除临时备份目录，且如果备份目录在数据目录内，也要排除它
+                if item != "temp_backup" and not backup_path.startswith(item_path):
                     dest_path = os.path.join(temp_backup_dir, item)
                     shutil.move(item_path, dest_path)
             print("✅ 临时备份创建成功")
