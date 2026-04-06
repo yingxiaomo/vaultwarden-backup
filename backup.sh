@@ -18,6 +18,20 @@ mkdir -p "$(dirname "$LOG_FILE")"
 # 重定向输出到日志文件
 exec > >(tee -a "$LOG_FILE") 2>&1
 
+# 检查是否已初始化
+if [ -z "$WEB_USER" ] || [ -z "$WEB_PASS" ]; then
+    echo "错误: 系统未初始化，请先完成初始化配置。"
+    exit 1
+fi
+
+# 检查数据库配置
+if [ "$DB_TYPE" = "mysql" ] || [ "$DB_TYPE" = "postgres" ]; then
+    if [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ] || [ -z "$DB_NAME" ]; then
+        echo "错误: ${DB_TYPE} 数据库配置不完整，请检查配置文件。"
+        exit 1
+    fi
+fi
+
 # 基础配置变量 (可通过环境变量覆盖)
 DB_TYPE="${DB_TYPE:-sqlite}"          # 数据库类型: sqlite, mysql, postgres
 DATA_DIR="${DATA_DIR:-/data}"      # Vaultwarden 数据目录
