@@ -145,6 +145,15 @@ async def save_config(request: Request, **form_data):
     # 保存环境变量
     save_env_vars(env_vars)
     
+    # 实时刷新系统的定时任务
+    cron_schedule = env_vars.get("CRON_SCHEDULE", "0 2 * * *")
+    # 生成新的 cron 命令规则
+    cron_cmd = f"{cron_schedule} . /app/env.sh && /app/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2\n"
+    # 写入临时文件并让 crontab 重新加载
+    with open("/tmp/crontab.txt", "w") as f:
+        f.write(cron_cmd)
+    subprocess.run(["crontab", "/tmp/crontab.txt"])
+    
     return RedirectResponse("/", status_code=303)
 
 # 恢复页面
@@ -221,8 +230,8 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
 @app.post("/do_backup")
 async def do_backup(request: Request):
     try:
-        # 执行备份脚本
-        subprocess.run(["/app/backup.sh"], check=True)
+        # 执行备份脚本，先source最新配置
+        subprocess.run("source /app/env.sh && /app/backup.sh", shell=True, check=True, executable="/bin/bash")
         return RedirectResponse("/", status_code=303)
     except Exception as e:
         print(f"备份失败: {e}")
