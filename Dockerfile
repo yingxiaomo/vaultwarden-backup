@@ -17,7 +17,7 @@ RUN apk add --no-cache \
     postgresql-client \
     && pip3 install --no-cache-dir --break-system-packages apprise fastapi uvicorn jinja2 docker pyyaml python-multipart
 
-RUN mkdir -p /app /vw_data /backup /config/rclone
+RUN mkdir -p /app /vw_data /config/rclone
 
 COPY lib /app/lib
 COPY src /app/src

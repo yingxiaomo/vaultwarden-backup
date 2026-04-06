@@ -115,6 +115,10 @@ DB_NAME: {json.dumps(db_name or "")}
     env_vars = get_env_vars()
     save_env_vars(env_vars)
     
+    # 创建用户指定的备份目录
+    os.makedirs(backup_dir, exist_ok=True)
+    print(f"已创建备份目录: {backup_dir}")
+    
     # 生成会话令牌
     session_token = hashlib.sha256((username + password).encode()).hexdigest()
     
