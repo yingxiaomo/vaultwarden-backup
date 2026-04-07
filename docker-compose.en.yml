@@ -2,8 +2,7 @@ version: '3.8'
 
 services:
   vaultwarden-backup:
-    # Use your custom image built and pushed to Docker Hub
-    image: yourusername/vaultwarden-backup:latest
+    image: yingxiaomo/vaultwarden-backup:latest
     container_name: vaultwarden_backup
     # Container restart policy: restart on failure
     restart: on-failure
@@ -41,7 +40,6 @@ services:
       # ---------------------------------------------------------
       # Method 1: Use local Apprise command line tool directly
       # Apprise notification URL.
-      # [Important] If no notifications are needed, comment out this line (add # at the beginning) or leave it empty.
       #
       # Configuration Instructions (Step-by-Step Guide):
       # 1. Find the notification platform you want to use.
@@ -91,7 +89,7 @@ services:
 
     volumes:
       # Mount Vaultwarden data directory (read-only mount to ensure data security)
-      - /path/to/your/data:/data:ro
+      - /YourDirectory/data:/data:ro
       
       # Mount local backup directory for storing generated encrypted zip files
       - ./backups:/backup

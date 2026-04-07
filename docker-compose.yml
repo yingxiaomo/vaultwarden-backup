@@ -2,8 +2,7 @@ version: '3.8'
 
 services:
   vaultwarden-backup:
-    # 使用你构建并推送到 Docker Hub 的镜像
-    image: yourusername/vaultwarden-backup:latest
+    image: yingxiaomo/vaultwarden-backup:latest
     container_name: vaultwarden_backup
     # 容器重启策略：失败时重启
     restart: on-failure
@@ -37,8 +36,6 @@ services:
       # Apprise 通知配置 (用于备份成功/失败时的消息推送)
       # ---------------------------------------------------------
       # 方式 1: 直接使用本地 Apprise 命令行工具
-      # Apprise 通知 URL。
-      # 【重要】如果不需要任何通知，请将此行注释掉 (在行首加 #) 或留空。
       #
       # 配置说明 (保姆级教程):
       # 1. 找到你想要使用的通知平台。
@@ -91,13 +88,13 @@ services:
 
     volumes:
       # 挂载 Vaultwarden 的数据目录 (只读挂载，保证数据安全)
-      - /path/to/your/data:/data:ro
+      - /你的目录/data:/data:ro
       
       # 挂载本地备份目录，用于存放生成的加密压缩包
       - ./backups:/backup
       
       # 【重要提醒】挂载 Rclone 配置文件目录
-      # 强烈建议挂载整个目录 `./:/config/rclone/` 而不是单个文件 `rclone.conf`。
+      # 强烈建议挂载整个目录 `./rclone_config:/config/rclone/` 而不是单个文件 `rclone.conf`。
       # 因为某些网盘 (如 OneDrive, Google Drive) 的 Token 会定期刷新，
       # Rclone 需要重写配置文件。如果只挂载单文件，可能会导致 Token 刷新冲突或失败。
       - ./rclone_config:/config/rclone/
