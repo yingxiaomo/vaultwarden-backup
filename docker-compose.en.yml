@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  vaultwarden-backup:
+    # Use your custom image built and pushed to Docker Hub
+    image: yourusername/vaultwarden-backup:latest
+    container_name: vaultwarden_backup
+    # Container restart policy: restart on failure
+    restart: on-failure
+    # Use English version of the backup script
+    command: /app/backup_en.sh
+    environment:
+      # ---------------------------------------------------------
+      # Database Configuration (Uncomment and modify based on your database)
+      # ---------------------------------------------------------
+      # Database type: sqlite (default), mysql, postgres
+      - DB_TYPE=sqlite
+      
+      # If using MySQL or PostgreSQL, configure the following connection info:
+      # - DB_HOST=db
+      # - DB_PORT=3306  # MySQL default port
+      # - DB_PORT=5432  # PostgreSQL default port
+      # - DB_USER=vaultwarden
+      # - DB_PASSWORD=your_db_password
+      # - DB_NAME=vaultwarden
+
+      # ---------------------------------------------------------
+      # Backup and Encryption Configuration
+      # ---------------------------------------------------------
+      # Zip file AES encryption password (optional, if not set, unencrypted packaging will be performed)
+      # - ZIP_PASSWORD=your_secure_zip_password
+      
+      # ---------------------------------------------------------
+      # Rclone Cloud Sync Configuration
+      # ---------------------------------------------------------
+      # Rclone remote path in format "config_name:path" (rclone.conf must be configured first)
+      - RCLONE_REMOTE=my_onedrive:/vaultwarden_backup
+      
+      # ---------------------------------------------------------
+      # Apprise Notification Configuration (for backup success/failure messages)
+      # ---------------------------------------------------------
+      # Method 1: Use local Apprise command line tool directly
+      # Apprise notification URL.
+      # [Important] If no notifications are needed, comment out this line (add # at the beginning) or leave it empty.
+      #
+      # Configuration Instructions (Step-by-Step Guide):
+      # 1. Find the notification platform you want to use.
+      # 2. Follow the format below, replacing the placeholder parts with your actual Token/ID.
+      # 3. For more supported platforms, refer to the Apprise official documentation: https://github.com/caronc/apprise
+      #
+      # Common platform configuration examples:
+      # - Telegram:   tgram://bottoken/ChatID
+      # - Discord:    discord://webhook_id/webhook_token
+      # - DingTalk:   dingtalk://Token
+      # - WeCom:      wxtx://CorpID/CorpSecret/AgentID
+      # - ServerChan: schan://SendKey
+      # - Email(SMTP): mailto://user:pass@domain.com
+      - APPRISE_URL=tgram://123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ/987654321
+      
+      # Method 2: Use independent Apprise service API
+      # Apprise service API address, e.g. http://apprise:8000
+      # - APPRISE_API_URL=http://apprise:8000
+      
+      # ---------------------------------------------------------
+      # Scheduled Task Configuration
+      # ---------------------------------------------------------
+      # Cron expression, default to run at 2 AM daily (0 2 * * *)
+      # Format: minute hour day month week
+      - CRON_SCHEDULE=0 2 * * *
+      
+      # Whether to execute a backup immediately when the container starts (true/false, default true)
+      - RUN_ON_STARTUP=true
+      
+      # Local backup retention days (default 15 days)
+      - LOCAL_BACKUP_KEEP_DAYS=15
+      
+      # Remote backup retention days (not set by default, no cleanup)
+      # - RCLONE_KEEP_DAYS=15
+      
+      # Backup file prefix (default vaultwarden_backup)
+      # - BACKUP_PREFIX=vaultwarden_backup
+
+      # ---------------------------------------------------------
+      # Network Proxy Configuration (optional, to resolve Apprise/Rclone access issues in some regions)
+      # ---------------------------------------------------------
+      # - HTTP_PROXY=http://192.168.1.100:7890
+      # - HTTPS_PROXY=http://192.168.1.100:7890
+      
+      # Timezone configuration (default Asia/Shanghai)
+      - TZ=Asia/Shanghai
+
+    volumes:
+      # Mount Vaultwarden data directory (read-only mount to ensure data security)
+      - /path/to/your/data:/data:ro
+      
+      # Mount local backup directory for storing generated encrypted zip files
+      - ./backups:/backup
+      
+      # [Important Reminder] Mount Rclone configuration directory
+      # It is strongly recommended to mount the entire directory `./rclone_config:/config/rclone/` instead of a single file `rclone.conf`.
+      # Because some cloud storage services (like OneDrive, Google Drive) periodically refresh their tokens,
+      # Rclone needs to rewrite the configuration file. If only a single file is mounted, it may cause token refresh conflicts or failures.
+      - ./rclone_config:/config/rclone/
+
+    # If using an external database container, ensure the backup container runs after the database starts
+    # depends_on:
+    #   - db
+    
+    healthcheck:
+      # Check if crond process is running
+      test: ["CMD", "pgrep", "crond" ]
+      interval: 1m
+      timeout: 10s
+      retries: 3

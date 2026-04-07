@@ -85,6 +85,9 @@ services:
       
       # 时区配置 (默认 Asia/Shanghai)
       - TZ=Asia/Shanghai
+      
+      # 语言配置 (默认 zh 中文，可设置为 en 英文)
+      - LANGUAGE=zh
 
     volumes:
       # 挂载 Vaultwarden 的数据目录 (只读挂载，保证数据安全)

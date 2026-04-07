@@ -19,13 +19,23 @@ echo "=================================================="
 # 将当前所有环境变量导出，并兼容 Alpine 的 sh 解析
 export -p | grep -v "no_proxy" | sed 's/declare -x/export/g' > /app/env.sh
 
+# 根据LANGUAGE环境变量选择备份脚本
+LANGUAGE="${LANGUAGE:-zh}"
+if [ "$LANGUAGE" = "en" ]; then
+    BACKUP_SCRIPT="/app/backup_en.sh"
+    echo "Language set to English, using backup_en.sh"
+else
+    BACKUP_SCRIPT="/app/backup.sh"
+    echo "Language set to Chinese, using backup.sh"
+fi
+
 # 在 crontab 里先 source 环境变量，再执行备份脚本
-echo "$CRON_SCHEDULE . /app/env.sh && /app/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2" | crontab -
+echo "$CRON_SCHEDULE . /app/env.sh && $BACKUP_SCRIPT > /proc/1/fd/1 2>/proc/1/fd/2" | crontab -
 
 # 启动即备份开关
 if [ "${RUN_ON_STARTUP:-true}" = "true" ]; then
     echo "检测到启动即备份开关，正在执行首次备份任务..."
-    /app/backup.sh
+    $BACKUP_SCRIPT
 fi
 
 echo "Starting crond daemon..."
