@@ -84,6 +84,14 @@ Apprise supports many platforms. Here are some common platform configuration for
 
 For more platform support and detailed configuration methods, please refer to the [Apprise official documentation](https://github.com/caronc/apprise).
 
+## 📁 Rclone Configuration Reference
+
+Rclone supports multiple cloud storage services. For detailed configuration methods, please refer to the official documentation:
+
+- [Rclone Remote Setup Official Documentation](https://rclone.org/remote_setup/)
+- [Rclone S3 Configuration Official Documentation](https://rclone.org/s3/)
+- [Rclone FTP Configuration Official Documentation](https://rclone.org/ftp/)
+
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).

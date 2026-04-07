@@ -84,6 +84,14 @@ Apprise 支持非常多的平台，以下是一些常见平台的配置格式：
 
 更多平台支持和详细配置方法，请参考 [Apprise 官方文档](https://github.com/caronc/apprise)。
 
+## 📁 Rclone 配置参考
+
+Rclone 支持多种云存储服务，详细的配置方法请参考官方文档：
+
+- [Rclone 远程设置官方文档](https://rclone.org/remote_setup/)
+- [Rclone S3 配置官方文档](https://rclone.org/s3/)
+- [Rclone FTP 配置官方文档](https://rclone.org/ftp/)
+
 ## 📄 许可证 (License)
 
 本项目采用 [MIT License](LICENSE) 开源许可证。
