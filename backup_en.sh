@@ -51,16 +51,13 @@ send_notification() {
         
         # If both API address and specific notification URL are configured (Stateless mode)
         if [ -n "$APPRISE_URL" ]; then
-            # Solve JSON newline error issue: replace actual newlines with text "\n"
-            local safe_body="${body//$'\n'/\n}"
-            # Prevent double quotes in title or content from breaking JSON structure
-            safe_body="${safe_body//"/\"}"
-            local safe_title="${title//"/\"}"
+            # Use jq to generate safe JSON
+            local json=$(jq -n --arg title "$title" --arg body "$body" --arg urls "$APPRISE_URL" '{title: $title, body: $body, urls: $urls}')
             
             # Use -s to hide curl's progress bar
             curl -s -X POST "$APPRISE_API_URL/notify" \
                  -H "Content-Type: application/json" \
-                 -d "{\"title\": \"$safe_title\", \"body\": \"$safe_body\", \"urls\": \"$APPRISE_URL\"}"
+                 -d "$json"
                 
         # If configuration path is directly written in the API address (e.g., `http://apprise:8000/notify/mybot`) (Stateful mode)
         else

@@ -17,7 +17,7 @@ echo "Cron Schedule: $CRON_SCHEDULE"
 echo "=================================================="
 
 # 将当前所有环境变量导出，并兼容 Alpine 的 sh 解析
-export -p | grep -v "no_proxy" | sed 's/declare -x/export/g' > /app/env.sh
+printenv | awk -F= '{print "export " $1 "='\''" substr($0, index($0,$2)) "'\''"}' | grep -v "no_proxy" > /app/env.sh
 
 # 根据LANGUAGE环境变量选择备份脚本
 LANGUAGE="${LANGUAGE:-zh}"

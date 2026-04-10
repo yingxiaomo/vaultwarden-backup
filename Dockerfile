@@ -15,6 +15,7 @@ RUN apk add --no-cache \
     tzdata \
     curl \
     postgresql-client \
+    jq \
     && pip3 install --no-cache-dir --break-system-packages apprise
 
 RUN mkdir -p /app /vw_data /backup /config/rclone
