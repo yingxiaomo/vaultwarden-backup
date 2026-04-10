@@ -33,7 +33,8 @@ ZIP_DONE=0
 # Try to delete temporary files no matter how the script exits
 cleanup() {
   rm -f "$SQL_FILE"
-  # Only clean up incomplete zip files if the script exits abnormally before packing is complete
+  # Clean up any residual staging directories
+  rm -rf "${BACKUP_DIR}/staging_"* # Only clean up incomplete zip files if the script exits abnormally before packing is complete
   if [ "$ZIP_DONE" -ne 1 ] && [ -f "$ZIP_FILE" ]; then
       rm -f "$ZIP_FILE"
   fi
@@ -202,32 +203,39 @@ if [ $? -ne 0 ]; then
 fi
 
 # 2. Packaging logic
-echo "Packing data directory and database files..."
-# Switch to data directory to avoid packing absolute paths
-cd "$DATA_DIR" || exit 1
+echo "Assembling files and packaging..."
 
-# Check if SQL file exists
-if [ ! -f "$SQL_FILE" ]; then
-    echo "Error: Database backup file $SQL_FILE does not exist!"
-    send_notification "Vaultwarden Backup Failed ❌" "Database backup file does not exist, database export may have failed."
-    exit 1
-fi
+# Create a temporary staging directory to ensure an extremely clean structure after extraction
+STAGING_DIR="${BACKUP_DIR}/staging_${TIMESTAMP}"
+mkdir -p "${STAGING_DIR}/data"
 
-# Decide whether to encrypt based on whether password is set
+# [Step 1]: Move the exported SQL file to the root of the staging directory
+mv "$SQL_FILE" "${STAGING_DIR}/"
+
+# [Step 2]: Copy the entire contents of the /data directory to the data folder in the staging directory
+# This is done to ensure that when extracted, you get a folder named data for easy restoration
+cp -a "$DATA_DIR"/* "${STAGING_DIR}/data/" 2>/dev/null || true
+
+# [Key detail]: Delete the physically copied sqlite database files.
+# Because we have already exported SQL scripts using dedicated command logic earlier, if we don't delete them here,
+# the zip file size will double, and database file conflicts may occur during restoration.
+rm -f "${STAGING_DIR}/data/"*.sqlite3* 2>/dev/null || true
+
+# [Step 3]: Switch to the staging directory to execute packaging
+cd "${STAGING_DIR}" || exit 1
+
 if [ -z "$ZIP_PASSWORD" ]; then
-    # Unencrypted packaging
     echo "Packing without encryption..."
-    zip -r -q "$ZIP_FILE" . "$SQL_FILE"
+    zip -r -q "$ZIP_FILE" .
 else
-    # Encrypted packaging
     echo "Packing with encryption..."
-    zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . "$SQL_FILE"
+    zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" .
 fi
 
 # Check if packaging was successful
 if [ $? -ne 0 ]; then
     echo "Error: Packing failed!"
-    send_notification "Vaultwarden Backup Failed ❌" "Error occurred during zip packing, please check disk space and permissions."
+    send_notification "Vaultwarden Backup Failed ❌" "Error occurred during zip packing, please check."
     exit 1
 fi
 
@@ -240,6 +248,10 @@ fi
 
 # Mark packaging as successful, so even if upload fails, the local zip file won't be deleted by trap
 ZIP_DONE=1
+
+# [Step 4]: After packaging is complete, clean up the staging directory
+cd "$BACKUP_DIR"
+rm -rf "${STAGING_DIR}"
 
 # Check zip file integrity
 echo "Verifying zip file integrity..."

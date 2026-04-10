@@ -31,7 +31,8 @@ ZIP_DONE=0
 # 无论脚本如何退出，都尝试删除临时文件
 cleanup() {
   rm -f "$SQL_FILE"
-  # 只有在打包"还没完成"时就异常退出，才去清理残缺的 zip 文件
+  # 清理可能残留的中转组装目录
+  rm -rf "${BACKUP_DIR}/staging_"* # 只有在打包"还没完成"时就异常退出，才去清理残缺的 zip 文件
   if [ "$ZIP_DONE" -ne 1 ] && [ -f "$ZIP_FILE" ]; then
       rm -f "$ZIP_FILE"
   fi
@@ -200,32 +201,39 @@ if [ $? -ne 0 ]; then
 fi
 
 # 2. 打包逻辑
-echo "正在打包数据目录和数据库文件..."
-# 切换到数据目录以避免打包绝对路径
-cd "$DATA_DIR" || exit 1
+echo "正在组装文件并打包..."
 
-# 检查 SQL 文件是否存在
-if [ ! -f "$SQL_FILE" ]; then
-    echo "错误: 数据库备份文件 $SQL_FILE 不存在！"
-    send_notification "Vaultwarden 备份失败 ❌" "数据库备份文件不存在，可能是数据库导出失败。"
-    exit 1
-fi
+# 创建一个临时中转目录，保证解压后的结构极度整洁
+STAGING_DIR="${BACKUP_DIR}/staging_${TIMESTAMP}"
+mkdir -p "${STAGING_DIR}/data"
 
-# 根据是否设置了密码决定是否加密打包
+# [步骤 1]: 将已经导出的 SQL 文件移动到中转目录的根部
+mv "$SQL_FILE" "${STAGING_DIR}/"
+
+# [步骤 2]: 将 /data 目录下的内容完整复制到中转目录的 data 文件夹中
+# 这样做是为了解压时，得到的就是一个名叫 data 的文件夹，方便恢复
+cp -a "$DATA_DIR"/* "${STAGING_DIR}/data/" 2>/dev/null || true
+
+# 【关键细节】: 删除物理复制过来的 sqlite 数据库文件。
+# 因为我们前面已经用专用命令逻辑导出了 SQL 脚本，这里如果不删，
+# 压缩包体积会翻倍，且恢复时可能会引起数据库文件冲突。
+rm -f "${STAGING_DIR}/data/"*.sqlite3* 2>/dev/null || true
+
+# [步骤 3]: 切换到中转目录执行打包
+cd "${STAGING_DIR}" || exit 1
+
 if [ -z "$ZIP_PASSWORD" ]; then
-    # 非加密打包
     echo "使用非加密方式打包..."
-    zip -r -q "$ZIP_FILE" . "$SQL_FILE"
+    zip -r -q "$ZIP_FILE" .
 else
-    # 加密打包
     echo "使用加密方式打包..."
-    zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . "$SQL_FILE"
+    zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" .
 fi
 
 # 检查打包是否成功
 if [ $? -ne 0 ]; then
     echo "错误: 打包失败！"
-    send_notification "Vaultwarden 备份失败 ❌" "使用 zip 打包过程中发生错误，请检查磁盘空间和权限。"
+    send_notification "Vaultwarden 备份失败 ❌" "使用 zip 打包过程中发生错误，请检查。"
     exit 1
 fi
 
@@ -238,6 +246,10 @@ fi
 
 # 标记打包成功，此后哪怕上传失败，本地压缩包也不会被 trap 误删
 ZIP_DONE=1
+
+# [步骤 4]: 打包完成后，功成身退，清理中转目录
+cd "$BACKUP_DIR"
+rm -rf "${STAGING_DIR}"
 
 # 检查压缩包完整性
 echo "正在校验压缩包完整性..."
