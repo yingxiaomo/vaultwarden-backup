@@ -65,6 +65,6 @@ cleanup_old_files() {
     local pattern="$2"
     local keep_days="$3"
     echo "正在清理 $keep_days 天前的旧文件..."
-    find "$dir" -name "$pattern" -mtime +$keep_days -exec rm {} \;
+    find "$dir" -name "$pattern" -mtime +$keep_days -exec rm -f {} \;
     echo "已清理 $keep_days 天前的旧文件。"
 }
