@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 if [ -n "$TZ" ] && [ -f "/usr/share/zoneinfo/$TZ" ]; then
     echo "Configuring timezone to $TZ..."
@@ -17,7 +17,14 @@ echo "Cron Schedule: $CRON_SCHEDULE"
 echo "=================================================="
 
 # 将当前所有环境变量导出，并兼容 Alpine 的 sh 解析
-printenv | awk -F= '{print "export " $1 "='\''" substr($0, index($0,$2)) "'\''"}' | grep -v "no_proxy" > /app/env.sh
+# 安全导出环境变量，正确处理特殊字符（单引号、$、等号）
+printenv | while IFS='=' read -r name rest; do
+    # 跳过 no_proxy 相关变量（可能含通配符，影响 shell 解析）
+    case "$name" in no_proxy|NO_PROXY) continue ;; esac
+    # 将值中的单引号转义后，用单引号整体包裹，防止变量展开
+    rest_escaped="${rest//'/'\\''}"
+    printf "export %s='%s'\n" "$name" "$rest_escaped"
+done > /app/env.sh
 
 # 根据LANGUAGE环境变量选择备份脚本
 LANGUAGE="${LANGUAGE:-zh}"

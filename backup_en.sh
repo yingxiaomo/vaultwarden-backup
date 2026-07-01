@@ -24,9 +24,9 @@ RCLONE_REMOTE="${RCLONE_REMOTE:-}"    # Rclone remote path, e.g. myremote:/vault
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")    # Format: YYYYMMDD_HHMMSS
 # Backup file prefix, can be customized via environment variable
 PREFIX="${BACKUP_PREFIX:-vaultwarden_backup}"
-BACkUP_NAME="${PREFIX}_${TIMESTAMP}" # Backup file base name
-SQL_FILE="${BACKUP_DIR}/${BACkUP_NAME}.sql"   # Exported SQL file path
-ZIP_FILE="${BACKUP_DIR}/${BACkUP_NAME}.zip"   # Final encrypted zip file path
+BACKUP_NAME="${PREFIX}_${TIMESTAMP}" # Backup file base name
+SQL_FILE="${BACKUP_DIR}/${BACKUP_NAME}.sql"   # Exported SQL file path
+ZIP_FILE="${BACKUP_DIR}/${BACKUP_NAME}.zip"   # Final encrypted zip file path
 
 # Zip file generation completion flag
 ZIP_DONE=0
@@ -91,7 +91,7 @@ mkdir -p "$BACKUP_DIR"
 # Check backup directory permissions
 if [ ! -w "$BACKUP_DIR" ]; then
     echo "Error: Backup directory $BACKUP_DIR does not have write permission!"
-    send_notification "Vaultwarden Backup Failed ❌" "Backup directory does not have write permission, please check permission settings."
+    send_notification "Vaultwarden Backup Failed ?" "Backup directory does not have write permission, please check permission settings."
     exit 1
 fi
 
@@ -106,7 +106,7 @@ if [ "$FREE_SPACE_MB" -lt "$MIN_SPACE_MB" ]; then
     # Get remaining space
     HUMAN_FREE=$(df -h "$BACKUP_DIR" | tail -n 1 | awk '{print $4}')
     echo "Warning: Insufficient disk space in the backup directory, remaining space is $HUMAN_FREE, less than 5GB!"
-    send_notification "Vaultwarden Backup Warning ⚠️" "Insufficient disk space in the backup directory, remaining space is $HUMAN_FREE, less than 5GB, which may cause backup failure."
+    send_notification "Vaultwarden Backup Warning ??" "Insufficient disk space in the backup directory, remaining space is $HUMAN_FREE, less than 5GB, which may cause backup failure."
 fi
 
 echo "Starting Vaultwarden backup task..."
@@ -120,7 +120,7 @@ case "$DB_TYPE" in
         # Check if sqlite3 command exists
         if ! command -v sqlite3 > /dev/null 2>&1; then
             echo "Error: sqlite3 command not found, please make sure SQLite tools are installed."
-            send_notification "Vaultwarden Backup Failed ❌" "sqlite3 command not found, please make sure SQLite tools are installed."
+            send_notification "Vaultwarden Backup Failed ?" "sqlite3 command not found, please make sure SQLite tools are installed."
             exit 1
         fi
         # SQLite backup logic: Use .backup command for safe export
@@ -128,15 +128,15 @@ case "$DB_TYPE" in
         if [ -f "$SQLITE_DB" ]; then
             echo "Backing up SQLite database using .backup command..."
             if sqlite3 "$SQLITE_DB" ".backup '$SQL_FILE'"; then
-                echo "✅ SQLite database backup successful."
+                echo "? SQLite database backup successful."
             else
                 echo "Error: SQLite database backup failed!"
-                send_notification "Vaultwarden Backup Failed ❌" "SQLite database backup failed, please check database file permissions."
+                send_notification "Vaultwarden Backup Failed ?" "SQLite database backup failed, please check database file permissions."
                 exit 1
             fi
         else
             echo "Error: SQLite database file $SQLITE_DB not found"
-            send_notification "Vaultwarden Backup Failed ❌" "SQLite database file not found."
+            send_notification "Vaultwarden Backup Failed ?" "SQLite database file not found."
             exit 1
         fi
         ;;
@@ -144,23 +144,23 @@ case "$DB_TYPE" in
         # Check if mysqldump command exists
         if ! command -v mysqldump > /dev/null 2>&1; then
             echo "Error: mysqldump command not found, please make sure MySQL client tools are installed."
-            send_notification "Vaultwarden Backup Failed ❌" "mysqldump command not found, please make sure MySQL client tools are installed."
+            send_notification "Vaultwarden Backup Failed ?" "mysqldump command not found, please make sure MySQL client tools are installed."
             exit 1
         fi
         # Check necessary environment variables
         if [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ] || [ -z "$DB_NAME" ]; then
             echo "Error: MySQL backup requires DB_USER, DB_PASSWORD and DB_NAME environment variables."
-            send_notification "Vaultwarden Backup Failed ❌" "MySQL backup requires DB_USER, DB_PASSWORD and DB_NAME environment variables."
+            send_notification "Vaultwarden Backup Failed ?" "MySQL backup requires DB_USER, DB_PASSWORD and DB_NAME environment variables."
             exit 1
         fi
         # MySQL/MariaDB backup logic: Use mysqldump to export
         export MYSQL_PWD="${DB_PASSWORD}" 
         echo "Backing up MySQL database using mysqldump..."
         if mysqldump --single-transaction --quick --opt -h "${DB_HOST:-db}" -P "${DB_PORT:-3306}" -u "${DB_USER}" "${DB_NAME}" > "$SQL_FILE"; then
-            echo "✅ MySQL database backup successful."
+            echo "? MySQL database backup successful."
         else
             echo "Error: MySQL database backup failed!"
-            send_notification "Vaultwarden Backup Failed ❌" "MySQL database backup failed, please check database connection and permissions."
+            send_notification "Vaultwarden Backup Failed ?" "MySQL database backup failed, please check database connection and permissions."
             exit 1
         fi
         ;;
@@ -168,39 +168,32 @@ case "$DB_TYPE" in
         # Check if pg_dump command exists
         if ! command -v pg_dump > /dev/null 2>&1; then
             echo "Error: pg_dump command not found, please make sure PostgreSQL client tools are installed."
-            send_notification "Vaultwarden Backup Failed ❌" "pg_dump command not found, please make sure PostgreSQL client tools are installed."
+            send_notification "Vaultwarden Backup Failed ?" "pg_dump command not found, please make sure PostgreSQL client tools are installed."
             exit 1
         fi
         # Check necessary environment variables
         if [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ] || [ -z "$DB_NAME" ]; then
             echo "Error: PostgreSQL backup requires DB_USER, DB_PASSWORD and DB_NAME environment variables."
-            send_notification "Vaultwarden Backup Failed ❌" "PostgreSQL backup requires DB_USER, DB_PASSWORD and DB_NAME environment variables."
+            send_notification "Vaultwarden Backup Failed ?" "PostgreSQL backup requires DB_USER, DB_PASSWORD and DB_NAME environment variables."
             exit 1
         fi
         # PostgreSQL backup logic: Use pg_dump to export
         export PGPASSWORD="${DB_PASSWORD}" 
         echo "Backing up PostgreSQL database using pg_dump..."
         if pg_dump --no-owner --no-privileges --clean -h "${DB_HOST:-db}" -p "${DB_PORT:-5432}" -U "${DB_USER}" -d "${DB_NAME}" -F p > "$SQL_FILE"; then
-            echo "✅ PostgreSQL database backup successful."
+            echo "? PostgreSQL database backup successful."
         else
             echo "Error: PostgreSQL database backup failed!"
-            send_notification "Vaultwarden Backup Failed ❌" "PostgreSQL database backup failed, please check database connection and permissions."
+            send_notification "Vaultwarden Backup Failed ?" "PostgreSQL database backup failed, please check database connection and permissions."
             exit 1
         fi
         ;;
     *)
         echo "Error: Unsupported database type $DB_TYPE"
-        send_notification "Vaultwarden Backup Failed ❌" "Unsupported database type: $DB_TYPE"
+        send_notification "Vaultwarden Backup Failed ?" "Unsupported database type: $DB_TYPE"
         exit 1
         ;;
 esac
-
-# Check if database backup was successful
-if [ $? -ne 0 ]; then
-    echo "Error: Database backup failed!"
-    send_notification "Vaultwarden Backup Failed ❌" "Database ($DB_TYPE) export failed."
-    exit 1
-fi
 
 # 2. Packaging logic
 echo "Assembling files and packaging..."
@@ -214,7 +207,10 @@ mv "$SQL_FILE" "${STAGING_DIR}/"
 
 # [Step 2]: Copy the entire contents of the /data directory to the data folder in the staging directory
 # This is done to ensure that when extracted, you get a folder named data for easy restoration
-cp -a "$DATA_DIR"/* "${STAGING_DIR}/data/" 2>/dev/null || true
+    # Enable nullglob to avoid literal wildcard when directory is empty
+    shopt -s nullglob
+    cp -a "$DATA_DIR"/* "${STAGING_DIR}/data/" 2>/dev/null || true
+    shopt -u nullglob
 
 # [Key detail]: Delete the physically copied sqlite database files.
 # Because we have already exported SQL scripts using dedicated command logic earlier, if we don't delete them here,
@@ -235,14 +231,14 @@ fi
 # Check if packaging was successful
 if [ $? -ne 0 ]; then
     echo "Error: Packing failed!"
-    send_notification "Vaultwarden Backup Failed ❌" "Error occurred during zip packing, please check."
+    send_notification "Vaultwarden Backup Failed ?" "Error occurred during zip packing, please check."
     exit 1
 fi
 
 # Check if zip file exists
 if [ ! -f "$ZIP_FILE" ]; then
     echo "Error: Zip file $ZIP_FILE does not exist!"
-    send_notification "Vaultwarden Backup Failed ❌" "Zip file does not exist, packing may have failed."
+    send_notification "Vaultwarden Backup Failed ?" "Zip file does not exist, packing may have failed."
     exit 1
 fi
 
@@ -258,19 +254,19 @@ echo "Verifying zip file integrity..."
 if [ -z "$ZIP_PASSWORD" ]; then
     # Verification for unencrypted packaging: Use unzip -tq for silent testing
     if unzip -tq "$ZIP_FILE" > /dev/null 2>&1; then
-        echo "✅ Zip file integrity verification passed."
+        echo "? Zip file integrity verification passed."
     else
-        echo "❌ Zip file corrupted!"
-        send_notification "Vaultwarden Backup Failed ❌" "Generated zip file verification failed, please check disk space."
+        echo "? Zip file corrupted!"
+        send_notification "Vaultwarden Backup Failed ?" "Generated zip file verification failed, please check disk space."
         exit 1
     fi
 else
     # Verification for encrypted packaging: Explicitly pass -P password for testing
     if unzip -tq -P "$ZIP_PASSWORD" "$ZIP_FILE" > /dev/null 2>&1; then
-        echo "✅ Zip file integrity verification passed."
+        echo "? Zip file integrity verification passed."
     else
-        echo "❌ Zip file corrupted!"
-        send_notification "Vaultwarden Backup Failed ❌" "Generated zip file password verification failed, please check."
+        echo "? Zip file corrupted!"
+        send_notification "Vaultwarden Backup Failed ?" "Generated zip file password verification failed, please check."
         exit 1
     fi
 fi
@@ -283,10 +279,10 @@ if [ -n "$RCLONE_REMOTE" ]; then
     # Test Rclone remote connection (global variables are already effective, no need to specify --config)
     echo "Testing Rclone remote connection..."
     if ! rclone listremotes | grep -q "^${RCLONE_REMOTE%%:*}:"; then
-        echo "❌ Warning: Rclone remote not found: ${RCLONE_REMOTE%%:*}"
-        send_notification "Vaultwarden Backup Warning ⚠️" "Rclone remote not found: ${RCLONE_REMOTE%%:*}, will attempt to continue uploading."
+        echo "? Warning: Rclone remote not found: ${RCLONE_REMOTE%%:*}"
+        send_notification "Vaultwarden Backup Warning ??" "Rclone remote not found: ${RCLONE_REMOTE%%:*}, will attempt to continue uploading."
     else
-        echo "✅ Rclone remote connection test passed."
+        echo "? Rclone remote connection test passed."
     fi
     
     echo "Uploading backup to $RCLONE_REMOTE using Rclone..."
@@ -295,7 +291,7 @@ if [ -n "$RCLONE_REMOTE" ]; then
     
     if [ $? -ne 0 ]; then
         echo "Error: Rclone upload failed!"
-        send_notification "Vaultwarden Backup Failed ❌" "Rclone upload to remote storage failed."
+        send_notification "Vaultwarden Backup Failed ?" "Rclone upload to remote storage failed."
         exit 1
     fi
     
@@ -304,7 +300,7 @@ if [ -n "$RCLONE_REMOTE" ]; then
         echo "RCLONE_KEEP_DAYS not set, skipping remote cleanup."
     else
         echo "Cleaning up remote expired backups (keeping $RCLONE_KEEP_DAYS days)..."
-        # Add --include filter to absolutely prevent accidental deletion of other private files in user's网盘!
+        # Add --include filter to absolutely prevent accidental deletion of other private files in user's����!
         rclone delete "$RCLONE_REMOTE" --include "${PREFIX}_*.zip" --min-age "${RCLONE_KEEP_DAYS}d"
     fi
 else
@@ -321,11 +317,14 @@ rm -f "$SQL_FILE" # Delete unencrypted SQL file
 echo "Cleaning up expired backups..."
 # Automatically clean up expired local backup files to prevent disk from being full
 KEEP_DAYS=${LOCAL_BACKUP_KEEP_DAYS:-15}
-find "$BACKUP_DIR" -name "${PREFIX}_*.zip" -mtime +$KEEP_DAYS -exec rm {} \;
+find "$BACKUP_DIR" -name "${PREFIX}_*.zip" -mtime +$KEEP_DAYS -exec rm -f {} \;
 echo "Cleaned up old local backups from $KEEP_DAYS days ago."
 
 # 6. Send success notification
 echo "Backup task completed!"
-send_notification "Vaultwarden Backup Success ✅" "Type: $DB_TYPE\nSize: $FILE_SIZE\nFile: $BACkUP_NAME.zip"
+NOTIFY_BODY="Type: ${DB_TYPE}
+Size: ${FILE_SIZE}
+File: ${BACKUP_NAME}.zip"
+send_notification "Vaultwarden Backup Success ?" "$NOTIFY_BODY"
 
 exit 0

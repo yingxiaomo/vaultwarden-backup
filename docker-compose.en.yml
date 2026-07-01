@@ -1,4 +1,4 @@
-version: '3.8'
+﻿version: '3.8'
 
 services:
   vaultwarden-backup:
@@ -6,8 +6,6 @@ services:
     container_name: vaultwarden_backup
     # Container restart policy: restart on failure
     restart: on-failure
-    # Use English version of the backup script
-    command: /app/backup_en.sh
     environment:
       # ---------------------------------------------------------
       # Database Configuration (Uncomment and modify based on your database)
@@ -86,6 +84,9 @@ services:
       
       # Timezone configuration (default Asia/Shanghai)
       - TZ=Asia/Shanghai
+
+      # Language setting (zh for Chinese, en for English)
+      - LANGUAGE=en
 
     volumes:
       # Mount Vaultwarden data directory (read-only mount to ensure data security)

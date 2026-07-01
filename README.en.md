@@ -32,16 +32,18 @@ There are many existing backup projects out there, but they are often overly com
 
 Ensure you have Docker and Docker Compose installed. If you need to use Rclone to upload to the cloud, prepare your `rclone.conf` configuration file first.
 
-### 2. Create `docker-compose.en.yml`
+### 2. Create docker-compose.yml
 
-Please directly use the [docker-compose.en.yml](docker-compose.en.yml) file in the project root directory as the configuration template, and modify the corresponding environment variables according to your actual needs.
+Please directly use the [docker-compose.yml](docker-compose.yml) file in the project root directory as the configuration template. Set `LANGUAGE=en` in the environment section and modify other variables according to your actual needs.
+
+> An English-translated template [docker-compose.en.yml](docker-compose.en.yml) is also available.
 
 ### 3. Start the Service
 
-Run in the directory where `docker-compose.en.yml` is located:
+Run in the directory where `docker-compose.yml` is located:
 
 ```bash
-docker-compose -f docker-compose.en.yml up -d
+docker-compose up -d
 ```
 
 ## ⚙ Environment Variables

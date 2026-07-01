@@ -193,13 +193,6 @@ case "$DB_TYPE" in
         ;;
 esac
 
-# 检查数据库备份是否成功
-if [ $? -ne 0 ]; then
-    echo "错误: 数据库备份失败！"
-    send_notification "Vaultwarden 备份失败 ❌" "数据库 ($DB_TYPE) 导出过程中发生错误。"
-    exit 1
-fi
-
 # 2. 打包逻辑
 echo "正在组装文件并打包..."
 
@@ -212,7 +205,10 @@ mv "$SQL_FILE" "${STAGING_DIR}/"
 
 # [步骤 2]: 将 /data 目录下的内容完整复制到中转目录的 data 文件夹中
 # 这样做是为了解压时，得到的就是一个名叫 data 的文件夹，方便恢复
-cp -a "$DATA_DIR"/* "${STAGING_DIR}/data/" 2>/dev/null || true
+    # 开启 nullglob 避免空目录产生字面通配符
+    shopt -s nullglob
+    cp -a "$DATA_DIR"/* "${STAGING_DIR}/data/" 2>/dev/null || true
+    shopt -u nullglob
 
 # 【关键细节】: 删除物理复制过来的 sqlite 数据库文件。
 # 因为我们前面已经用专用命令逻辑导出了 SQL 脚本，这里如果不删，
@@ -319,7 +315,7 @@ rm -f "$SQL_FILE" # 删除未加密的 SQL 文件
 echo "正在清理过期备份..."
 # 自动清理过期的本地备份文件，防止磁盘塞满
 KEEP_DAYS=${LOCAL_BACKUP_KEEP_DAYS:-15}
-find "$BACKUP_DIR" -name "${PREFIX}_*.zip" -mtime +$KEEP_DAYS -exec rm {} \;
+find "$BACKUP_DIR" -name "${PREFIX}_*.zip" -mtime +$KEEP_DAYS -exec rm -f {} \;
 echo "已清理 $KEEP_DAYS 天前的旧本地备份。"
 
 # 6. 发送成功通知
