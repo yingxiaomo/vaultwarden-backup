@@ -36,7 +36,7 @@ class BackupService:
         """执行备份脚本"""
         try:
             # 执行备份脚本
-            subprocess.run("source /app/env.sh && /app/lib/scripts/backup.sh", shell=True, executable="/bin/bash")
+            subprocess.run("source /app/env.sh && /app/lib/scripts/backup.sh", shell=True, executable="/bin/bash", check=True)
             return True
         except Exception as e:
             print(f"备份失败: {e}")

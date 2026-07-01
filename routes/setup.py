@@ -4,11 +4,9 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 import os
 import json
-import shlex
-import hashlib
 
 from app_config import get_env_vars, save_env_vars
-from utils import run_shell_command
+from services.auth import AuthService
 
 # 初始化模板
 templates = Jinja2Templates(directory="templates")
@@ -120,7 +118,7 @@ DB_NAME: {json.dumps(db_name or "")}
     print(f"已创建备份目录: {backup_dir}")
     
     # 生成会话令牌
-    session_token = hashlib.sha256((username + password).encode()).hexdigest()
+    session_token = AuthService.generate_token(username, password)
     
     # 重定向到主页，并设置会话 Cookie
     response = RedirectResponse(url="/", status_code=303)
