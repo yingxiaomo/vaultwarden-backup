@@ -161,10 +161,11 @@ else
 fi
 
 # 清理临时文件
+ZIP_EXIT_CODE=$?
 rm -f "$TEMP_SQL_FILE"
 
 # 检查打包是否成功
-if [ $? -ne 0 ]; then
+if [ $ZIP_EXIT_CODE -ne 0 ]; then
     echo "错误: 打包失败！"
     send_notification "Vaultwarden 备份失败 ❌" "使用 zip 打包过程中发生错误，请检查磁盘空间和权限。"
     exit 1

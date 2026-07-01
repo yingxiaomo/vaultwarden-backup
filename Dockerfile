@@ -6,7 +6,7 @@ ENV RCLONE_CONFIG=/config/rclone/rclone.conf
 RUN apk add --no-cache \
     mariadb-client \
     sqlite \
-    rclone \
+    rclone jq \
     zip \
     unzip \
     python3 \

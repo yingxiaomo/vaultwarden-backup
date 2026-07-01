@@ -6,7 +6,6 @@ import subprocess
 import re
 
 # 配置文件路径
-import os
 # 检查是否在 Docker 容器内（通过检查环境变量或文件路径）
 def is_docker():
     """检测是否在 Docker 容器内"""

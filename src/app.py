@@ -12,7 +12,7 @@ import tempfile
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 导入配置管理模块
-from app_config import get_env_vars, save_env_vars, create_default_config
+from app_config import get_env_vars, save_env_vars
 
 # 导入核心共享模块
 from src.core import RequiresSetupException, RequiresLoginException, verify_auth

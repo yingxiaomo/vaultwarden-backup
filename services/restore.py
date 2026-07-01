@@ -179,7 +179,6 @@ class RestoreService:
                 print(f"已启动 Vaultwarden 容器: {container.name}")
             
             # 清理临时备份
-            temp_backup_dir = os.path.join(data_dir, "temp_backup")
             if os.path.exists(temp_backup_dir):
                 shutil.rmtree(temp_backup_dir)
                 print("✅ 临时备份已清理")

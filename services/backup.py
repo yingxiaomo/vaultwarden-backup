@@ -28,7 +28,7 @@ class BackupService:
                         })
                 backup_history.sort(key=lambda x: x["mtime"], reverse=True)
         except Exception as e:
-            backup_history = [f"获取备份历史失败: {e}"]
+            backup_history = []
         return backup_history
     
     @staticmethod
