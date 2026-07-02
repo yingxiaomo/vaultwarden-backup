@@ -1,7 +1,14 @@
-ï»¿
 FROM alpine:latest
 
+# °æ±¾ÐÅÏ¢ ¡ª ¹¹½¨Ê±Í¨¹ý --build-arg VERSION= ´«Èë
+ARG VERSION
+LABEL org.opencontainers.image.title="Vaultwarden Backup" \
+      org.opencontainers.image.description="×Ô¶¯±¸·Ý Vaultwarden Êý¾Ý²¢Í¬²½µ½ÔÆ´æ´¢" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.source="https://github.com/yingxiaomo/vaultwarden-backup"
+
 ENV RCLONE_CONFIG=/config/rclone/rclone.conf
+ENV APP_VERSION=${VERSION}
 
 RUN apk add --no-cache \
     mariadb-client \
@@ -23,7 +30,6 @@ RUN mkdir -p /app /vw_data /backup /config/rclone
 COPY backup.sh /app/backup.sh
 COPY backup_en.sh /app/backup_en.sh
 COPY entrypoint.sh /app/entrypoint.sh
-COPY backup_en.sh /app/backup_en.sh
 
 RUN chmod +x /app/backup.sh /app/backup_en.sh /app/entrypoint.sh
 

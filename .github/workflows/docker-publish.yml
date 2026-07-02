@@ -4,9 +4,10 @@ on:
   push:
     branches:
       - main
-    # paths:
-    #   - 'Dockerfile'
-    #   - 'backup.sh'
+    paths-ignore:
+      - "*.md"
+      - "docker-compose*.yml"
+      - ".gitignore"
 
 env:
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/vaultwarden-backup
@@ -18,6 +19,10 @@ jobs:
   
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: 读取 VERSION 文件
+        id: version
+        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -37,12 +42,16 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            # 鑷姩鎵撲笂 latest 鏍囩
-            type=raw,value=latest
-            # 鑷姩鎵撲笂鏃ユ湡鐗堟湰鏍囩锛屾牸寮忓: 20240520
+            # 自动打上 latest 标签
+            type=raw,value=latest,enable={{ is_default_branch }}
+            # 自动打上版本号标签，例如: 1.0.0
+            type=raw,value=${{ steps.version.outputs.version }}
+            # 自动打上日期版本标签，格式: YYYYMMDD
             type=raw,value={{date 'YYYYMMDD'}}
-            # 浣跨敤 git commit sha 浣滀负 tag
+            # 使用 git commit sha 作为 tag
             type=sha,format=short
+          labels: |
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -50,6 +59,8 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
