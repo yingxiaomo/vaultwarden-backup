@@ -20,9 +20,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: 读取 VERSION 文件
+      - name: 自动生成版本号
         id: version
-        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+        run: |
+          BASE=$(cat VERSION)
+          REV=$(git rev-list --count HEAD)
+          echo "version=${BASE}.${REV}" >> $GITHUB_OUTPUT
+          echo "Generated version: ${BASE}.${REV}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -44,11 +48,11 @@ jobs:
           tags: |
             # 自动打上 latest 标签
             type=raw,value=latest,enable={{ is_default_branch }}
-            # 自动打上版本号标签，例如: 1.0.0
+            # 自动生成的版本号标签，例如: 1.0.42
             type=raw,value=${{ steps.version.outputs.version }}
-            # 自动打上日期版本标签，格式: YYYYMMDD
+            # 日期标签，格式: YYYYMMDD
             type=raw,value={{date 'YYYYMMDD'}}
-            # 使用 git commit sha 作为 tag
+            # commit sha 短标签
             type=sha,format=short
           labels: |
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
