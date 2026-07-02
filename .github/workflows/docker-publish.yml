@@ -5,9 +5,10 @@ on:
     branches:
       - main
       - web-panel-dev
-    # paths:
-    #   - 'Dockerfile'
-    #   - 'backup.sh'
+    paths-ignore:
+      - "*.md"
+      - "docker-compose*.yml"
+      - ".gitignore"
 
 env:
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/vaultwarden-backup
@@ -16,9 +17,17 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
-  
+
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: �Զ����ɰ汾��
+        id: version
+        run: |
+          BASE=$(cat VERSION)
+          REV=$(git rev-list --count HEAD)
+          echo "version=${BASE}.${REV}" >> $GITHUB_OUTPUT
+          echo "Generated version: ${BASE}.${REV}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -38,14 +47,13 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            # 1. 只有在 main 分支推送时，才打 latest 标签
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            # 2. 为所有分支打上日期版本标签，格式如: 20240520
+            type=raw,value=${{ steps.version.outputs.version }}
             type=raw,value={{date 'YYYYMMDD'}}
-            # 3. 只有在 web-panel-dev 分支推送时，才打 dev 标签
             type=raw,value=dev,enable=${{ endsWith(github.ref, 'web-panel-dev') }}
-            # 4. 使用 git commit sha 作为 tag
             type=sha,format=short
+          labels: |
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -53,6 +61,8 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

@@ -1,7 +1,13 @@
-
 FROM alpine:latest
 
+ARG VERSION
+LABEL org.opencontainers.image.title="Vaultwarden Backup Web Panel" \
+      org.opencontainers.image.description="Web 管理面板 — 自动备份 Vaultwarden 数据并同步到云存储" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.source="https://github.com/yingxiaomo/vaultwarden-backup"
+
 ENV RCLONE_CONFIG=/config/rclone/rclone.conf
+ENV APP_VERSION=${VERSION}
 
 RUN apk add --no-cache \
     mariadb-client \
