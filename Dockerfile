@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM alpine:3.21
 
 ARG VERSION
 LABEL org.opencontainers.image.title="Vaultwarden Backup" \
@@ -22,7 +22,7 @@ RUN apk add --no-cache \
     tzdata \
     curl \
     postgresql-client \
-    && pip3 install --no-cache-dir --break-system-packages fastapi uvicorn jinja2 pyyaml python-multipart
+    && pip3 install --no-cache-dir --break-system-packages fastapi uvicorn "jinja2<3.1.6" pyyaml python-multipart
 
 RUN mkdir -p /app /vw_data /config/rclone /backup /app/config
 
