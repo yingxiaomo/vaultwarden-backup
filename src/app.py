@@ -1,5 +1,4 @@
 import hashlib
-import json
 import os
 import shutil
 import shlex
@@ -44,16 +43,10 @@ def load_config():
 
 def save_config(env_vars: dict):
     os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
-    lines = []
-    for key, value in env_vars.items():
-        if value is None:
-            continue
-        sv = str(value)
-        if any(c in sv for c in ":,#{}[]&*!|>'\"%@"):
-            sv = json.dumps(sv, ensure_ascii=False)
-        lines.append(f"{key}: {sv}")
+    import yaml as _yaml
+    filtered = {k: v for k, v in env_vars.items() if v is not None}
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
+        _yaml.dump(filtered, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
 
     os.makedirs(os.path.dirname(ENV_FILE), exist_ok=True)
     with open(ENV_FILE, "w", encoding="utf-8") as f:
