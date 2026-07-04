@@ -1,0 +1,191 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>配置 - Vaultwarden 备份管理</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{background:#f0f2f5;font-family:"Segoe UI",system-ui,-apple-system,sans-serif}
+.container{max-width:1200px}
+.nav-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.nav-header h3{font-weight:700;color:#1a1a2e;margin:0}
+.nav-header h3 i{color:#4361ee;margin-right:8px}
+.nav-tabs-custom{display:flex;gap:4px;background:#fff;border-radius:12px;padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:24px}
+.nav-tabs-custom a{color:#6c757d;border-radius:8px;padding:10px 24px;text-decoration:none;font-weight:500;transition:all .2s}
+.nav-tabs-custom a:hover{background:rgba(0,0,0,.04);color:#1a1a2e}
+.nav-tabs-custom a.active{background:#4361ee;color:#fff;box-shadow:0 2px 8px rgba(67,97,238,.3)}
+.card{border:none;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:20px;transition:box-shadow .2s}
+.card:hover{box-shadow:0 4px 20px rgba(0,0,0,.1)}
+.card-header{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;border-radius:14px 14px 0 0;padding:16px 20px;border-bottom:none}
+.card-header h5{margin:0;font-weight:600;font-size:16px}
+.card-header h5 i{margin-right:8px;opacity:.9}
+.card-body{padding:20px}
+.btn{border-radius:10px;padding:12px 24px;font-weight:600;transition:all .2s}
+.btn:hover{transform:translateY(-2px)}
+.btn-primary{background:#4361ee;border-color:#4361ee;color:#fff}
+.btn-primary:hover{background:#3a56d4;box-shadow:0 4px 14px rgba(67,97,238,.35);color:#fff}
+.btn-lg{padding:14px 32px;font-size:16px}
+.btn-outline-back{border-radius:8px;padding:6px 16px;color:#6c757d;border-color:#dee2e6}
+.btn-outline-back:hover{background:#f8f9fa;color:#4361ee;border-color:#4361ee}
+.form-label{font-weight:600;margin-bottom:6px;font-size:14px;color:#1a1a2e}
+.form-text{font-size:12px;color:#6c757d;margin-top:4px;line-height:1.4}
+.form-control,.form-select{border-radius:8px;border:1.5px solid #dee2e6;padding:10px 14px;transition:border-color .2s,box-shadow .2s}
+.form-control:focus,.form-select:focus{border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.15)}
+.alert-custom{border-radius:12px;border:none;padding:14px 20px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 24px}
+@media(max-width:768px){
+.form-grid{grid-template-columns:1fr}
+.nav-tabs-custom{flex-direction:column;gap:2px}
+.nav-tabs-custom a{text-align:center}
+.card-body{padding:16px}
+}
+</style>
+</head>
+<body>
+<div class="container mt-4 mb-4">
+
+  <div class="nav-header">
+    <h3><i class="bi bi-gear"></i> 配置管理</h3>
+    <a href="/" class="btn btn-outline-back"><i class="bi bi-arrow-left"></i> 返回仪表盘</a>
+  </div>
+
+  <nav class="nav-tabs-custom">
+    <a href="/"><i class="bi bi-speedometer2"></i> 仪表盘</a>
+    <a class="active" href="/config"><i class="bi bi-gear"></i> 配置</a>
+  </nav>
+
+  {{if .Ok}}
+  <div class="alert alert-success alert-custom alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i> 配置已保存并生效
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {{end}}
+
+  <form action="/save_config" method="post">
+
+    <div class="card">
+      <div class="card-header"><h5><i class="bi bi-database"></i> 数据库设置</h5></div>
+      <div class="card-body">
+        <div class="form-grid">
+        {{range .Fields}}
+        {{$fv := .Value}}{{$ft := .Type}}
+        {{if or (eq .Key "DB_TYPE") (eq .Key "SQLITE_DB_FILE") (eq .Key "DB_HOST") (eq .Key "DB_PORT") (eq .Key "DB_USER") (eq .Key "DB_PASSWORD") (eq .Key "DB_NAME")}}
+        <div class="mb-0">
+          <label class="form-label">{{.Label}}</label>
+          {{if eq .Type "select"}}
+          <select class="form-select" name="{{.Key}}">
+            {{range .Opts}}<option value="{{index . 0}}" {{if eq (index . 0) $fv}}selected{{end}}>{{index . 1}}</option>{{end}}
+          </select>
+          {{else}}
+          <input type="{{.Type}}" class="form-control" name="{{.Key}}" value="{{.Value}}" placeholder="{{.Default}}">
+          {{end}}
+          <div class="form-text">{{.Desc}}</div>
+        </div>
+        {{end}}
+        {{end}}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h5><i class="bi bi-folder"></i> 路径与文件</h5></div>
+      <div class="card-body">
+        <div class="form-grid">
+        {{range .Fields}}
+        {{$fv := .Value}}
+        {{if or (eq .Key "BACKUP_PREFIX") (eq .Key "DATA_DIR") (eq .Key "BACKUP_DIR") (eq .Key "ZIP_PASSWORD")}}
+        <div class="mb-0">
+          <label class="form-label">{{.Label}}</label>
+          <input type="{{.Type}}" class="form-control" name="{{.Key}}" value="{{.Value}}" placeholder="{{.Default}}">
+          <div class="form-text">{{.Desc}}</div>
+        </div>
+        {{end}}
+        {{end}}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h5><i class="bi bi-clock"></i> 定时任务</h5></div>
+      <div class="card-body">
+        <div class="form-grid">
+        {{range .Fields}}
+        {{$fv := .Value}}
+        {{if or (eq .Key "CRON_SCHEDULE") (eq .Key "RUN_ON_STARTUP") (eq .Key "LOCAL_BACKUP_KEEP_DAYS")}}
+        <div class="mb-0">
+          <label class="form-label">{{.Label}}</label>
+          {{if eq .Type "select"}}
+          <select class="form-select" name="{{.Key}}">
+            {{range .Opts}}<option value="{{index . 0}}" {{if eq (index . 0) $fv}}selected{{end}}>{{index . 1}}</option>{{end}}
+          </select>
+          {{else if eq .Type "number"}}
+          <input type="number" class="form-control" name="{{.Key}}" value="{{.Value}}">
+          {{else}}
+          <input type="text" class="form-control" name="{{.Key}}" value="{{.Value}}" placeholder="{{.Default}}">
+          {{end}}
+          <div class="form-text">{{.Desc}}</div>
+        </div>
+        {{end}}
+        {{end}}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h5><i class="bi bi-cloud"></i> 云存储与通知</h5></div>
+      <div class="card-body">
+        <div class="form-grid">
+        {{range .Fields}}
+        {{$fv := .Value}}
+        {{if or (eq .Key "RCLONE_REMOTE") (eq .Key "RCLONE_KEEP_DAYS") (eq .Key "APPRISE_URL") (eq .Key "APPRISE_API_URL")}}
+        <div class="mb-0">
+          <label class="form-label">{{.Label}}</label>
+          {{if eq .Type "number"}}
+          <input type="number" class="form-control" name="{{.Key}}" value="{{.Value}}">
+          {{else}}
+          <input type="text" class="form-control" name="{{.Key}}" value="{{.Value}}" placeholder="{{.Default}}">
+          {{end}}
+          <div class="form-text">{{.Desc}}</div>
+        </div>
+        {{end}}
+        {{end}}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h5><i class="bi bi-globe"></i> 系统设置</h5></div>
+      <div class="card-body">
+        <div class="form-grid">
+        {{range .Fields}}
+        {{$fv := .Value}}
+        {{if or (eq .Key "TZ") (eq .Key "HTTP_PROXY") (eq .Key "HTTPS_PROXY") (eq .Key "CREATE_TEMP_BACKUP")}}
+        <div class="mb-0">
+          <label class="form-label">{{.Label}}</label>
+          {{if eq .Type "select"}}
+          <select class="form-select" name="{{.Key}}">
+            {{range .Opts}}<option value="{{index . 0}}" {{if eq (index . 0) $fv}}selected{{end}}>{{index . 1}}</option>{{end}}
+          </select>
+          {{else}}
+          <input type="text" class="form-control" name="{{.Key}}" value="{{.Value}}" placeholder="{{.Default}}">
+          {{end}}
+          <div class="form-text">{{.Desc}}</div>
+        </div>
+        {{end}}
+        {{end}}
+        </div>
+      </div>
+    </div>
+
+    <div class="d-grid mt-4 mb-2">
+      <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-save me-2"></i> 保存配置</button>
+    </div>
+
+  </form>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

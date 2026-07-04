@@ -1,41 +1,50 @@
+# ============================================================
+# 阶段一：编译 Go 二进制文件
+# ============================================================
+FROM golang:1.23-alpine AS builder
+
+WORKDIR /build
+COPY go.mod main.go web.go ./
+COPY templates/ ./templates/
+
+RUN go build -ldflags="-s -w" -o vaultwarden-backup .
+
+# ============================================================
+# 阶段二：最小运行镜像
+# ============================================================
 FROM alpine:3.21
 
-# 版本信息 — 构建时通过 --build-arg VERSION= 传入
-ARG VERSION
+ARG VERSION=0.0.0
 LABEL org.opencontainers.image.title="Vaultwarden Backup" \
-      org.opencontainers.image.description="自动备份 Vaultwarden 数据并同步到云存储" \
+      org.opencontainers.image.description="Vaultwarden 数据备份工具 — 支持数据库导出、加密压缩、云同步和 Web 管理面板" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.source="https://github.com/yingxiaomo/vaultwarden-backup"
 
 ENV RCLONE_CONFIG=/config/rclone/rclone.conf
-ENV APP_VERSION=${VERSION}
 
-# 安装依赖 + 清理 pip 自身和缓存，大幅减小镜像体积
+# 安装运行时依赖（仅备份所需的 CLI 工具）
 RUN apk add --no-cache \
     mariadb-client \
     sqlite \
     rclone \
     zip \
     unzip \
-    python3 \
-    py3-pip \
-    bash \
     tzdata \
+    ca-certificates \
     curl \
     postgresql-client \
-    jq \
-    && mkdir -p /app /vw_data /backup /config/rclone \
-    && pip3 install --no-cache-dir --break-system-packages apprise \
-    && rm -rf /usr/lib/python3.*/ensurepip \
-              /usr/lib/python3.*/site-packages/pip \
-              /root/.cache/pip \
-              /root/.cache
+    && rm -rf /var/cache/apk/*
 
-# 复制脚本
-COPY backup.sh backup_en.sh entrypoint.sh /app/
+# 创建必要的目录结构
+RUN mkdir -p /app /data /backup /config/rclone /app/config
 
-RUN chmod +x /app/backup.sh /app/backup_en.sh /app/entrypoint.sh
+# 复制编译好的二进制文件和入口脚本
+COPY --from=builder /build/vaultwarden-backup /app/vaultwarden-backup
+COPY entrypoint.sh /app/entrypoint.sh
+
+RUN chmod +x /app/entrypoint.sh
 
 WORKDIR /app
 
+# 默认以 Web 面板模式启动
 CMD ["/app/entrypoint.sh"]

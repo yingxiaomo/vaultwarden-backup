@@ -1,18 +1,21 @@
-﻿# --------------------------------------------
+# --------------------------------------------
 # Vaultwarden Backup — .gitignore
 # --------------------------------------------
 
-# 临时脚本 / 临时产物
+# Go 构建产物
+vaultwarden-backup
+vaultwarden-backup.exe
+
+# 临时文件
 *.tmp
 *.swp
 *.bak
 _fix_*
 fix_bugs*
 
-# Python 缓存
-__pycache__/
-*.pyc
-*.pyo
+# 环境文件
+.env
+env.sh
 
 # 操作系统文件
 Thumbs.db
@@ -33,5 +36,13 @@ backups/
 # Rclone 本地配置副本
 rclone_config/
 
-# 环境变量导出文件
-env.sh
+# 日志
+logs/
+*.log
+
+# 构建产物
+build/
+dist/
+
+# Docker
+.dockerignore

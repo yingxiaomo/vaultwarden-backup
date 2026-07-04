@@ -1,0 +1,293 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vaultwarden 备份管理</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{background:#f0f2f5;font-family:"Segoe UI",system-ui,-apple-system,sans-serif}
+.container{max-width:1200px}
+.nav-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.nav-header h3{font-weight:700;color:#1a1a2e;margin:0}
+.nav-header h3 i{color:#4361ee;margin-right:8px}
+.nav-tabs-custom{display:flex;gap:4px;background:#fff;border-radius:12px;padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:24px}
+.nav-tabs-custom a{color:#6c757d;border-radius:8px;padding:10px 24px;text-decoration:none;font-weight:500;transition:all .2s}
+.nav-tabs-custom a:hover{background:rgba(0,0,0,.04);color:#1a1a2e}
+.nav-tabs-custom a.active{background:#4361ee;color:#fff;box-shadow:0 2px 8px rgba(67,97,238,.3)}
+.card{border:none;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:20px;transition:box-shadow .2s}
+.card:hover{box-shadow:0 4px 20px rgba(0,0,0,.1)}
+.card-header{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;border-radius:14px 14px 0 0;padding:16px 20px;border-bottom:none}
+.card-header h5{margin:0;font-weight:600;font-size:16px}
+.card-header h5 i{margin-right:8px;opacity:.9}
+.card-body{padding:20px}
+.card-action-backup .card-header{background:linear-gradient(135deg,#4361ee,#3a56d4)}
+.card-action-restore .card-header{background:linear-gradient(135deg,#e36414,#d45a12)}
+.card-action-upload .card-header{background:linear-gradient(135deg,#06d6a0,#05b88a)}
+.btn{border-radius:10px;padding:12px 24px;font-weight:600;transition:all .2s}
+.btn:hover{transform:translateY(-2px)}
+.btn-backup{background:#4361ee;border-color:#4361ee;color:#fff}
+.btn-backup:hover{background:#3a56d4;box-shadow:0 4px 14px rgba(67,97,238,.35);color:#fff}
+.btn-restore{background:#e36414;border-color:#e36414;color:#fff}
+.btn-restore:hover{background:#d45a12;box-shadow:0 4px 14px rgba(227,100,20,.35);color:#fff}
+.btn-sm-restore{padding:6px 14px;font-size:13px;border-radius:8px;background:#e36414;border-color:#e36414;color:#fff;transition:all .2s}
+.btn-sm-restore:hover{background:#d45a12;box-shadow:0 2px 8px rgba(227,100,20,.3);color:#fff}
+.btn-upload-restore{background:#06d6a0;border-color:#06d6a0;color:#fff}
+.btn-upload-restore:hover{background:#05b88a;box-shadow:0 4px 14px rgba(6,214,160,.35);color:#fff}
+.btn-outline-logout{border-radius:8px;padding:6px 16px;color:#6c757d;border-color:#dee2e6}
+.btn-outline-logout:hover{background:#f8f9fa;color:#dc3545;border-color:#dc3545}
+.form-control-file{border:2px dashed #dee2e6;border-radius:10px;padding:10px 12px;background:#fafbfc;cursor:pointer;transition:all .2s;width:100%;font-size:14px}
+.form-control-file:hover{border-color:#4361ee;background:#f0f4ff}
+.form-control-file:focus-within{border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.15)}
+.form-control-file::file-selector-button{border-radius:6px;padding:4px 12px;background:#4361ee;color:#fff;border:none;margin-right:12px;font-size:13px;cursor:pointer}
+.alert-custom{border-radius:12px;border:none;padding:14px 20px}
+.history-stats{display:flex;gap:24px;padding:0 4px 16px;margin-bottom:16px;border-bottom:1px solid #e9ecef}
+.history-stat{display:flex;align-items:center;gap:10px}
+.history-stat-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.history-stat-icon.blue{background:#eef1ff;color:#4361ee}
+.history-stat-icon.green{background:#e6faf5;color:#06d6a0}
+.history-stat-icon.orange{background:#fef3e9;color:#e36414}
+.history-stat-text{display:flex;flex-direction:column}
+.history-stat-text .num{font-weight:700;font-size:18px;color:#1a1a2e;line-height:1.2}
+.history-stat-text .label{font-size:12px;color:#6c757d}
+.table-backup thead th{padding:12px 16px;font-weight:600;font-size:13px;color:#6c757d;border-bottom:1px solid #e9ecef;background:transparent;text-transform:uppercase;letter-spacing:.3px}
+.table-backup td{padding:14px 16px;vertical-align:middle;border-bottom:1px solid #f2f2f2;font-size:14px}
+.table-backup tbody tr{transition:background .15s;cursor:default}
+.table-backup tbody tr:last-child td{border-bottom:none}
+.table-backup tbody tr:hover{background:#f8faff}
+.table-backup .file-icon{font-size:20px;color:#4361ee;margin-right:10px;vertical-align:middle}
+.table-backup .file-name{font-weight:500;color:#1a1a2e}
+.table-backup .file-size{background:#f0f2f5;border-radius:6px;padding:4px 10px;font-size:13px;color:#495057;font-weight:500;white-space:nowrap}
+.table-backup .file-time{color:#6c757d;font-size:13px}
+.table-backup .file-time i{margin-right:4px}
+.empty-state{padding:48px 20px;text-align:center}
+.empty-state i{font-size:56px;color:#d0d3d9;display:block;margin-bottom:16px}
+.empty-state p{font-size:16px;color:#6c757d;margin-bottom:4px}
+.empty-state small{color:#adb5bd;font-size:14px}
+.log-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px}
+.log-toolbar-left{display:flex;align-items:center;gap:12px}
+.log-toolbar-right{display:flex;align-items:center;gap:8px}
+.log-status{display:flex;align-items:center;gap:6px;font-size:13px;color:#6c757d;padding:4px 12px;background:#f8f9fa;border-radius:8px}
+.log-status .dot{width:8px;height:8px;border-radius:50%;background:#06d6a0;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.log-box{background:#1a1a2e;color:#c9d1d9;border-radius:12px;padding:16px;min-height:240px;max-height:360px;overflow-y:auto;font:13px/1.7 "JetBrains Mono","Cascadia Code","Courier New",monospace;position:relative}
+.log-box pre{margin:0;white-space:pre-wrap;word-wrap:break-word}
+.log-clear-btn{padding:4px 12px;font-size:12px;border-radius:6px;border:1px solid #dee2e6;background:#fff;color:#6c757d;cursor:pointer;transition:all .2s}
+.log-clear-btn:hover{background:#f8f9fa;color:#dc3545;border-color:#dc3545}
+@media(max-width:768px){
+.nav-tabs-custom{flex-direction:column;gap:2px}
+.nav-tabs-custom a{text-align:center}
+.card-body{padding:16px}
+.history-stats{flex-wrap:wrap;gap:12px}
+.log-toolbar{flex-direction:column;align-items:stretch}
+}
+</style>
+</head>
+<body>
+<div class="container mt-4 mb-4">
+
+  <div class="nav-header">
+    <h3><i class="bi bi-shield-check"></i> Vaultwarden 备份管理</h3>
+    <a href="/logout" class="btn btn-outline-logout"><i class="bi bi-box-arrow-right"></i> 退出</a>
+  </div>
+
+  <nav class="nav-tabs-custom">
+    <a class="active" href="/"><i class="bi bi-speedometer2"></i> 仪表盘</a>
+    <a href="/config"><i class="bi bi-gear"></i> 配置</a>
+  </nav>
+
+  {{if .Msg}}
+  <div class="alert alert-success alert-custom alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i> {{.Msg}}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {{end}}
+
+  <div class="row g-4 mb-4">
+    <div class="col-md-4">
+      <div class="card card-action-backup h-100">
+        <div class="card-header"><h5><i class="bi bi-cloud-upload"></i> 立即备份</h5></div>
+        <div class="card-body d-flex flex-column">
+          <p class="text-muted small mb-3">手动触发一次完整的备份流程，包含数据库导出、压缩加密和云同步。</p>
+          <form action="/do_backup" method="post" class="mt-auto">
+            <button type="submit" class="btn btn-backup w-100"><i class="bi bi-play-circle me-1"></i> 执行备份</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card card-action-restore h-100">
+        <div class="card-header"><h5><i class="bi bi-arrow-counterclockwise"></i> 快速恢复</h5></div>
+        <div class="card-body d-flex flex-column">
+          <p class="text-muted small mb-3">从下方备份列表中选择文件，点击「恢复」即可还原数据。</p>
+          <div class="mt-auto text-center">
+            <i class="bi bi-arrow-down-circle text-muted" style="font-size:24px;opacity:.4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card card-action-upload h-100">
+        <div class="card-header"><h5><i class="bi bi-upload"></i> 上传恢复</h5></div>
+        <div class="card-body d-flex flex-column">
+          <p class="text-muted small mb-3">从本地上传 .zip 备份文件进行恢复，支持加密备份文件。</p>
+          <form action="/do_upload_restore" method="post" enctype="multipart/form-data" class="mt-auto"
+                onsubmit="return confirm('确定从上传的文件恢复？将停止 Vaultwarden 并替换当前数据。')">
+            <div class="mb-3">
+              <input type="file" class="form-control-file" name="file" accept=".zip" required>
+            </div>
+            <button type="submit" class="btn btn-upload-restore w-100"><i class="bi bi-cloud-upload me-1"></i> 上传并恢复</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h5><i class="bi bi-clock-history"></i> 备份历史</h5></div>
+    <div class="card-body">
+      {{if .Backups}}
+      <div class="history-stats">
+        <div class="history-stat">
+          <div class="history-stat-icon blue"><i class="bi bi-file-earmark-zip"></i></div>
+          <div class="history-stat-text">
+            <span class="num">{{len .Backups}}</span>
+            <span class="label">备份文件</span>
+          </div>
+        </div>
+        <div class="history-stat">
+          <div class="history-stat-icon green"><i class="bi bi-database"></i></div>
+          <div class="history-stat-text">
+            <span class="num">{{(index .Backups 0).Size}}</span>
+            <span class="label">最新文件</span>
+          </div>
+        </div>
+        <div class="history-stat">
+          <div class="history-stat-icon orange"><i class="bi bi-calendar"></i></div>
+          <div class="history-stat-text">
+            <span class="num">{{slice (index .Backups 0).Mtime 0 10}}</span>
+            <span class="label">最近备份</span>
+          </div>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-backup mb-0">
+          <thead><tr><th>文件名</th><th>大小</th><th>修改时间</th><th style="width:100px">操作</th></tr></thead>
+          <tbody>
+          {{range .Backups}}
+          <tr>
+            <td><i class="bi bi-file-earmark-zip file-icon"></i><span class="file-name">{{.Name}}</span></td>
+            <td><span class="file-size">{{.Size}}</span></td>
+            <td class="file-time"><i class="bi bi-calendar3"></i>{{.Mtime}}</td>
+            <td>
+              <form action="/do_restore" method="post" class="d-inline"
+                    onsubmit="return confirm('确定恢复 {{.Name}}？将停止 Vaultwarden 并替换当前数据。')">
+                <input type="hidden" name="backup_file" value="{{.Name}}">
+                <button type="submit" class="btn-sm-restore"><i class="bi bi-arrow-counterclockwise me-1"></i>恢复</button>
+              </form>
+            </td>
+          </tr>
+          {{end}}
+          </tbody>
+        </table>
+      </div>
+      {{else}}
+      <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <p>暂无备份文件</p>
+        <small class="text-muted">点击上方「执行备份」开始你的第一次备份</small>
+      </div>
+      {{end}}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h5><i class="bi bi-terminal"></i> 备份日志</h5></div>
+    <div class="card-body">
+      <div class="log-toolbar">
+        <div class="log-toolbar-left">
+          <div class="log-status">
+            <span class="dot"></span>
+            <span id="log-status-text">实时监控中</span>
+          </div>
+          <span style="color:#adb5bd;font-size:12px" id="log-update-time"></span>
+        </div>
+        <div class="log-toolbar-right">
+          <button class="log-clear-btn" onclick="clearLogs()"><i class="bi bi-trash3 me-1"></i>清空</button>
+        </div>
+      </div>
+      <div class="log-box" id="log-scroll"><pre id="log-content">加载中...</pre></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function escapeHtml(text) {
+  var div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function formatLogLine(line) {
+  var levelClass = "";
+  var content = line;
+  if (/error|失败|fatal|exception|traceback/i.test(line)) { levelClass = "level-error"; }
+  else if (/warn|deprecated/i.test(line)) { levelClass = "level-warn"; }
+  else if (/success|完成|成功|ok|done/i.test(line)) { levelClass = "level-ok"; }
+  else if (/info|信息/i.test(line)) { levelClass = "level-info"; }
+
+  if (levelClass) {
+    var tsMatch = line.match(/^(\d{4}[-/]\d{2}[-/]\d{2}[T ]\d{2}:\d{2}:\d{2})/);
+    if (tsMatch) {
+      var ts = tsMatch[1];
+      var rest = line.slice(tsMatch[0].length);
+      return "<span class=\"ts\">" + escapeHtml(ts) + "</span><span class=\"level " + levelClass + "\">" + escapeHtml(rest) + "</span>";
+    }
+    return "<span class=\"level " + levelClass + "\">" + escapeHtml(line) + "</span>";
+  }
+  return "<span>" + escapeHtml(line) + "</span>";
+}
+
+function formatLogContent(text) {
+  if (!text) return "<span style=\"color:#8b949e\">暂无日志</span>";
+  var lines = text.split("\n");
+  var html = "";
+  for (var i = 0; i < lines.length; i++) {
+    html += "<div class=\"log-line\">" + formatLogLine(lines[i]) + "</div>";
+  }
+  return html;
+}
+
+function loadLogs(){
+  fetch("/logs")
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var el = document.getElementById("log-content");
+      if (d.logs) {
+        el.innerHTML = formatLogContent(d.logs);
+      } else {
+        el.innerHTML = "<div class=\"log-line\"><span style=\"color:#8b949e\">暂无日志</span></div>";
+      }
+      var scroll = document.getElementById("log-scroll");
+      scroll.scrollTop = scroll.scrollHeight;
+      document.getElementById("log-status-text").textContent = "实时监控中";
+      document.getElementById("log-update-time").textContent = new Date().toLocaleTimeString();
+    })
+    .catch(function(e) {
+      document.getElementById("log-content").innerHTML = "<div class=\"log-line\"><span class=\"level level-error\">加载日志失败: " + e + "</span></div>";
+      document.getElementById("log-status-text").textContent = "连接失败";
+    });
+}
+
+function clearLogs() {
+  document.getElementById("log-content").innerHTML = "<div class=\"log-line\"><span style=\"color:#8b949e\">日志已清空</span></div>";
+}
+loadLogs();
+setInterval(loadLogs, 5000);
+</script>
+</body>
+</html>
