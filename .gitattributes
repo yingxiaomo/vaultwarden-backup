@@ -1,0 +1,21 @@
+﻿# 强制使用 LF 换行符（容器内 Linux 需要）
+* text=auto eol=lf
+
+# Shell 脚本确保 LF
+*.sh text eol=lf
+
+# Python 文件
+*.py text eol=lf
+
+# YAML / Markdown
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+
+# Dockerfile
+Dockerfile text eol=lf
+
+# 二进制文件不进行换行符转换
+*.zip binary
+*.png binary
+*.jpg binary
