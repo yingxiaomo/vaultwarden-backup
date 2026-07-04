@@ -11,13 +11,23 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 CONFIG_FILE = "/app/config/config.yaml"
 ENV_FILE = "/app/env.sh"
 BACKUP_LOG = "/app/config/backup.log"
 TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "templates")
-templates = Jinja2Templates(directory=TEMPLATES_DIR)
+_jinja_env = Environment(
+    loader=FileSystemLoader(TEMPLATES_DIR),
+    autoescape=select_autoescape(["html", "xml"]),
+    auto_reload=False,
+    cache_size=0,
+)
+
+
+def _render(name: str, request: Request, **context):
+    tpl = _jinja_env.get_template(name)
+    return HTMLResponse(tpl.render({"request": request, **context}))
 
 
 def load_config():
@@ -155,7 +165,7 @@ app = FastAPI(lifespan=lifespan)
 # -- 登录 --
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request, error: str = ""):
-    return templates.TemplateResponse("login.html", {"request": request, "error": error})
+    return _render("login.html", request, error=error)
 
 @app.post("/do_login")
 async def do_login(request: Request, username: str = Form(...), password: str = Form(...)):
@@ -176,7 +186,7 @@ async def logout():
 # -- 初始化 --
 @app.get("/setup", response_class=HTMLResponse)
 async def setup_page(request: Request, error: str = ""):
-    return templates.TemplateResponse("setup.html", {"request": request, "error": error})
+    return _render("setup.html", request, error=error)
 
 @app.post("/do_setup")
 async def do_setup(
@@ -222,9 +232,7 @@ async def dashboard(request: Request, msg: str = ""):
         except Exception as e:
             print(f"read backup history error: {e}")
 
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request, "backups": backups, "msg": msg,
-    })
+    return _render("dashboard.html", request, backups=backups, msg=msg)
 
 # -- 配置 --
 @app.get("/config", response_class=HTMLResponse)
@@ -237,9 +245,7 @@ async def config_page(request: Request, ok: str = ""):
         val = config.get(f["key"])
         f["value"] = str(val) if val is not None else f.get("default", "")
         fields.append(f)
-    return templates.TemplateResponse("config.html", {
-        "request": request, "fields": fields, "ok": ok,
-    })
+    return _render("config.html", request, fields=fields, ok=ok)
 
 @app.post("/save_config")
 async def save_config_route(request: Request):
