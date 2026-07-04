@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -7,148 +7,182 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 <style>
-body{background:#f5f6fa;font-family:'Segoe UI',sans-serif}.container{max-width:900px}
-.nav-pills{background:#fff;border-radius:8px;padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:24px}
-.nav-pills .nav-link{color:#495057;border-radius:6px;padding:10px 20px;margin:0 4px}
-.nav-pills .nav-link.active{background:#343a40;color:#fff}
-.card{border:none;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-bottom:20px}
-.card-header{background:#343a40;color:#fff;border-radius:12px 12px 0 0;padding:14px 20px}
-.card-header h5{margin:0;font-weight:600}
+body{background:#f0f2f5;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+.container{max-width:960px}
+/* 顶栏 */
+.nav-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.nav-header h3{font-weight:700;color:#1a1a2e}
+.nav-header h3 i{color:#4361ee;margin-right:8px}
+.nav-tabs-custom{display:flex;gap:4px;background:#fff;border-radius:12px;padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:24px}
+.nav-tabs-custom a{color:#6c757d;border-radius:8px;padding:10px 24px;text-decoration:none;font-weight:500;transition:all .2s}
+.nav-tabs-custom a:hover{background:rgba(0,0,0,.04);color:#1a1a2e}
+.nav-tabs-custom a.active{background:#4361ee;color:#fff;box-shadow:0 2px 8px rgba(67,97,238,.3)}
+/* 卡片 */
+.card{border:none;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:20px}
+.card-header{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;border-radius:14px 14px 0 0;padding:16px 20px;border-bottom:none}
+.card-header h5{margin:0;font-weight:600;font-size:16px}
+.card-header h5 i{margin-right:8px;opacity:.9}
 .card-body{padding:24px}
-.form-label{font-weight:600;margin-bottom:4px;font-size:14px}
-.form-text{font-size:12px;color:#6c757d;margin-top:2px}
-.form-control,.form-select{border-radius:8px}
-.btn{border-radius:8px;padding:10px 24px;font-weight:600}
-.btn-primary{background:#0d6efd;border-color:#0d6efd}
-.btn-primary:hover{background:#0b5ed7}
-.section-title{font-weight:700;color:#343a40;margin:24px 0 16px;padding-bottom:8px;border-bottom:2px solid #dee2e6}
-@media(max-width:768px){.nav-pills{flex-direction:column}.nav-pills .nav-link{margin:2px 0}}
+/* 表单 */
+.form-label{font-weight:600;margin-bottom:6px;font-size:14px;color:#1a1a2e}
+.form-text{font-size:12px;color:#6c757d;margin-top:4px;line-height:1.4}
+.form-control,.form-select{border-radius:8px;border:1.5px solid #dee2e6;padding:10px 14px;transition:border-color .2s,box-shadow .2s}
+.form-control:focus,.form-select:focus{border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.15)}
+.form-select{background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 fill=%27%236c757d%27%3E%3Cpath d=%27M6 8L1 3h10z%27/%3E%3C/svg%3E")}
+/* 按钮 */
+.btn{border-radius:10px;padding:12px 24px;font-weight:600;transition:all .2s}
+.btn:hover{transform:translateY(-2px)}
+.btn-primary{background:#4361ee;border-color:#4361ee;color:#fff}
+.btn-primary:hover{background:#3a56d4;box-shadow:0 4px 14px rgba(67,97,238,.35);color:#fff}
+.btn-outline-back{border-radius:8px;padding:6px 16px;color:#6c757d;border-color:#dee2e6}
+.btn-outline-back:hover{background:#f8f9fa;color:#4361ee;border-color:#4361ee}
+/* 分段标题 */
+.section-divider{font-weight:700;font-size:15px;color:#1a1a2e;padding:8px 0;margin:0 0 16px;border-bottom:2px solid #e9ecef;display:flex;align-items:center;gap:8px}
+/* 消息 */
+.alert-custom{border-radius:12px;border:none;padding:14px 20px}
+@media(max-width:768px){
+.nav-tabs-custom{flex-direction:column;gap:2px}
+.nav-tabs-custom a{text-align:center}
+}
 </style>
 </head>
 <body>
-<div class="container mt-4">
-<div class="d-flex justify-content-between align-items-center mb-3">
-<div><h3 class="mb-0"><i class="bi bi-gear"></i> 配置管理</h3></div>
-<a href="/" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> 返回仪表盘</a>
-</div>
+<div class="container mt-4 mb-4">
 
-<nav class="nav nav-pills">
-<a class="nav-link" href="/"><i class="bi bi-speedometer2"></i> 仪表盘</a>
-<a class="nav-link active" href="/config"><i class="bi bi-gear"></i> 配置</a>
-</nav>
+  <div class="nav-header">
+    <h3><i class="bi bi-gear"></i> 配置管理</h3>
+    <a href="/" class="btn btn-outline-back"><i class="bi bi-arrow-left"></i> 返回仪表盘</a>
+  </div>
 
-{% if ok %}
-<div class="alert alert-success alert-dismissible fade show">
-<i class="bi bi-check-circle"></i> 配置已保存并生效
-<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-{% endif %}
+  <nav class="nav-tabs-custom">
+    <a href="/"><i class="bi bi-speedometer2"></i> 仪表盘</a>
+    <a class="active" href="/config"><i class="bi bi-gear"></i> 配置</a>
+  </nav>
 
-<form action="/save_config" method="post">
-<div class="card">
-<div class="card-header"><h5><i class="bi bi-database"></i> 数据库设置</h5></div>
-<div class="card-body">
-{% for f in fields %}
-{% if f.key in ['DB_TYPE','SQLITE_DB_FILE','DB_HOST','DB_PORT','DB_USER','DB_PASSWORD','DB_NAME'] %}
-<div class="mb-3">
-<label class="form-label">{{ f.label }}</label>
-{% if f.type == 'select' %}
-<select class="form-select" name="{{ f.key }}">
-{% for val,label in f.opts %}
-<option value="{{ val }}" {% if f.value == val %}selected{% endif %}>{{ label }}</option>
-{% endfor %}
-</select>
-{% else %}
-<input type="{{ f.type }}" class="form-control" name="{{ f.key }}" value="{{ f.value }}" placeholder="{{ f.default }}">
-{% endif %}
-<div class="form-text">{{ f.desc }}</div>
-</div>
-{% endif %}
-{% endfor %}
-</div></div>
+  {% if ok %}
+  <div class="alert alert-success alert-custom alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i> 配置已保存并生效
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endif %}
 
-<div class="card">
-<div class="card-header"><h5><i class="bi bi-folder"></i> 路径与文件</h5></div>
-<div class="card-body">
-{% for f in fields %}
-{% if f.key in ['BACKUP_PREFIX','DATA_DIR','BACKUP_DIR','ZIP_PASSWORD'] %}
-<div class="mb-3">
-<label class="form-label">{{ f.label }}</label>
-<input type="{{ f.type }}" class="form-control" name="{{ f.key }}" value="{{ f.value }}" placeholder="{{ f.default }}">
-<div class="form-text">{{ f.desc }}</div>
-</div>
-{% endif %}
-{% endfor %}
-</div></div>
+  <form action="/save_config" method="post">
 
-<div class="card">
-<div class="card-header"><h5><i class="bi bi-clock"></i> 定时任务</h5></div>
-<div class="card-body">
-{% for f in fields %}
-{% if f.key in ['CRON_SCHEDULE','RUN_ON_STARTUP','LOCAL_BACKUP_KEEP_DAYS'] %}
-<div class="mb-3">
-<label class="form-label">{{ f.label }}</label>
-{% if f.type == 'select' %}
-<select class="form-select" name="{{ f.key }}">
-{% for val,label in f.opts %}
-<option value="{{ val }}" {% if f.value == val %}selected{% endif %}>{{ label }}</option>
-{% endfor %}
-</select>
-{% elif f.type == 'number' %}
-<input type="number" class="form-control" name="{{ f.key }}" value="{{ f.value }}">
-{% else %}
-<input type="text" class="form-control" name="{{ f.key }}" value="{{ f.value }}" placeholder="{{ f.default }}">
-{% endif %}
-<div class="form-text">{{ f.desc }}</div>
-</div>
-{% endif %}
-{% endfor %}
-</div></div>
+    <!-- 数据库设置 -->
+    <div class="card">
+      <div class="card-header"><h5><i class="bi bi-database"></i> 数据库设置</h5></div>
+      <div class="card-body">
+        {% for f in fields %}
+        {% if f.key in ['DB_TYPE','SQLITE_DB_FILE','DB_HOST','DB_PORT','DB_USER','DB_PASSWORD','DB_NAME'] %}
+        <div class="mb-3">
+          <label class="form-label">{{ f.label }}</label>
+          {% if f.type == 'select' %}
+          <select class="form-select" name="{{ f.key }}">
+            {% for val,label in f.opts %}
+            <option value="{{ val }}" {% if f.value == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          {% else %}
+          <input type="{{ f.type }}" class="form-control" name="{{ f.key }}" value="{{ f.value }}" placeholder="{{ f.default }}">
+          {% endif %}
+          <div class="form-text">{{ f.desc }}</div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
 
-<div class="card">
-<div class="card-header"><h5><i class="bi bi-cloud"></i> 云存储与通知</h5></div>
-<div class="card-body">
-{% for f in fields %}
-{% if f.key in ['RCLONE_REMOTE','RCLONE_KEEP_DAYS','APPRISE_URL','APPRISE_API_URL'] %}
-<div class="mb-3">
-<label class="form-label">{{ f.label }}</label>
-{% if f.type == 'number' %}
-<input type="number" class="form-control" name="{{ f.key }}" value="{{ f.value }}">
-{% else %}
-<input type="text" class="form-control" name="{{ f.key }}" value="{{ f.value }}" placeholder="{{ f.default }}">
-{% endif %}
-<div class="form-text">{{ f.desc }}</div>
-</div>
-{% endif %}
-{% endfor %}
-</div></div>
+    <!-- 路径与文件 -->
+    <div class="card">
+      <div class="card-header"><h5><i class="bi bi-folder"></i> 路径与文件</h5></div>
+      <div class="card-body">
+        {% for f in fields %}
+        {% if f.key in ['BACKUP_PREFIX','DATA_DIR','BACKUP_DIR','ZIP_PASSWORD'] %}
+        <div class="mb-3">
+          <label class="form-label">{{ f.label }}</label>
+          <input type="{{ f.type }}" class="form-control" name="{{ f.key }}" value="{{ f.value }}" placeholder="{{ f.default }}">
+          <div class="form-text">{{ f.desc }}</div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
 
-<div class="card">
-<div class="card-header"><h5><i class="bi bi-globe"></i> 系统设置</h5></div>
-<div class="card-body">
-{% for f in fields %}
-{% if f.key in ['TZ','HTTP_PROXY','HTTPS_PROXY','CREATE_TEMP_BACKUP'] %}
-<div class="mb-3">
-<label class="form-label">{{ f.label }}</label>
-{% if f.type == 'select' %}
-<select class="form-select" name="{{ f.key }}">
-{% for val,label in f.opts %}
-<option value="{{ val }}" {% if f.value == val %}selected{% endif %}>{{ label }}</option>
-{% endfor %}
-</select>
-{% else %}
-<input type="text" class="form-control" name="{{ f.key }}" value="{{ f.value }}" placeholder="{{ f.default }}">
-{% endif %}
-<div class="form-text">{{ f.desc }}</div>
-</div>
-{% endif %}
-{% endfor %}
-</div></div>
+    <!-- 定时任务 -->
+    <div class="card">
+      <div class="card-header"><h5><i class="bi bi-clock"></i> 定时任务</h5></div>
+      <div class="card-body">
+        {% for f in fields %}
+        {% if f.key in ['CRON_SCHEDULE','RUN_ON_STARTUP','LOCAL_BACKUP_KEEP_DAYS'] %}
+        <div class="mb-3">
+          <label class="form-label">{{ f.label }}</label>
+          {% if f.type == 'select' %}
+          <select class="form-select" name="{{ f.key }}">
+            {% for val,label in f.opts %}
+            <option value="{{ val }}" {% if f.value == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          {% elif f.type == 'number' %}
+          <input type="number" class="form-control" name="{{ f.key }}" value="{{ f.value }}">
+          {% else %}
+          <input type="text" class="form-control" name="{{ f.key }}" value="{{ f.value }}" placeholder="{{ f.default }}">
+          {% endif %}
+          <div class="form-text">{{ f.desc }}</div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
 
-<div class="d-grid gap-2 mt-3">
-<button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-save"></i> 保存配置</button>
-</div>
-</form>
+    <!-- 云存储与通知 -->
+    <div class="card">
+      <div class="card-header"><h5><i class="bi bi-cloud"></i> 云存储与通知</h5></div>
+      <div class="card-body">
+        {% for f in fields %}
+        {% if f.key in ['RCLONE_REMOTE','RCLONE_KEEP_DAYS','APPRISE_URL','APPRISE_API_URL'] %}
+        <div class="mb-3">
+          <label class="form-label">{{ f.label }}</label>
+          {% if f.type == 'number' %}
+          <input type="number" class="form-control" name="{{ f.key }}" value="{{ f.value }}">
+          {% else %}
+          <input type="text" class="form-control" name="{{ f.key }}" value="{{ f.value }}" placeholder="{{ f.default }}">
+          {% endif %}
+          <div class="form-text">{{ f.desc }}</div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- 系统设置 -->
+    <div class="card">
+      <div class="card-header"><h5><i class="bi bi-globe"></i> 系统设置</h5></div>
+      <div class="card-body">
+        {% for f in fields %}
+        {% if f.key in ['TZ','HTTP_PROXY','HTTPS_PROXY','CREATE_TEMP_BACKUP'] %}
+        <div class="mb-3">
+          <label class="form-label">{{ f.label }}</label>
+          {% if f.type == 'select' %}
+          <select class="form-select" name="{{ f.key }}">
+            {% for val,label in f.opts %}
+            <option value="{{ val }}" {% if f.value == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          {% else %}
+          <input type="text" class="form-control" name="{{ f.key }}" value="{{ f.value }}" placeholder="{{ f.default }}">
+          {% endif %}
+          <div class="form-text">{{ f.desc }}</div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="d-grid mt-4">
+      <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-save me-2"></i> 保存配置</button>
+    </div>
+
+  </form>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
