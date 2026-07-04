@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request, Form, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -259,21 +259,8 @@ async def do_backup(request: Request):
     return RedirectResponse(url="/", status_code=303)
 
 # -- 恢复 --
-@app.post("/do_restore")
-async def do_restore(request: Request, backup_file: str = Form(...)):
-    verify_auth(request)
-    config = load_config()
-    backup_dir = config.get("BACKUP_DIR", "/backup")
-    data_dir = config.get("DATA_DIR", "/data")
-    zip_password = config.get("ZIP_PASSWORD", "")
-    db_type = config.get("DB_TYPE", "sqlite")
-    sqlite_db_file = config.get("SQLITE_DB_FILE", "db.sqlite3")
-    create_temp = str(config.get("CREATE_TEMP_BACKUP", "true")).lower() == "true"
-
-    backup_path = os.path.join(backup_dir, os.path.basename(backup_file))
-    if not os.path.exists(backup_path):
-        return HTMLResponse("备份文件不存在", status_code=404)
-
+def _do_restore_internal(data_dir, backup_path, zip_password, db_type, sqlite_db_file, create_temp):
+    """共用恢复逻辑，返回 (ok, err_msg)"""
     temp_backup = os.path.join(data_dir, "_restore_undo")
     try:
         subprocess.run(["docker", "stop", "vaultwarden"], capture_output=True, timeout=30)
@@ -297,14 +284,15 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
             if os.path.exists(temp_db):
                 target = os.path.join(data_dir, sqlite_db_file)
                 for f in [target + "-wal", target + "-shm"]:
-                    if os.path.exists(f): os.remove(f)
+                    if os.path.exists(f):
+                        os.remove(f)
                 os.replace(temp_db, target)
 
         subprocess.run(["docker", "start", "vaultwarden"], capture_output=True, timeout=30)
 
         if os.path.exists(temp_backup):
             shutil.rmtree(temp_backup)
-        return RedirectResponse(url="/?msg=恢复成功", status_code=303)
+        return True, None
 
     except Exception as e:
         print(f"restore error: {e}")
@@ -315,7 +303,62 @@ async def do_restore(request: Request, backup_file: str = Form(...)):
                 shutil.move(src, dst)
             shutil.rmtree(temp_backup)
         subprocess.run(["docker", "start", "vaultwarden"], capture_output=True, timeout=30)
-        return HTMLResponse(f"恢复失败（已回滚）: {e}", status_code=500)
+        return False, str(e)
+
+
+@app.post("/do_restore")
+async def do_restore(request: Request, backup_file: str = Form(...)):
+    verify_auth(request)
+    config = load_config()
+    backup_dir = config.get("BACKUP_DIR", "/backup")
+    data_dir = config.get("DATA_DIR", "/data")
+    zip_password = config.get("ZIP_PASSWORD", "")
+    db_type = config.get("DB_TYPE", "sqlite")
+    sqlite_db_file = config.get("SQLITE_DB_FILE", "db.sqlite3")
+    create_temp = str(config.get("CREATE_TEMP_BACKUP", "true")).lower() == "true"
+
+    backup_path = os.path.join(backup_dir, os.path.basename(backup_file))
+    if not os.path.exists(backup_path):
+        return HTMLResponse("备份文件不存在", status_code=404)
+
+    ok, err = _do_restore_internal(data_dir, backup_path, zip_password, db_type, sqlite_db_file, create_temp)
+    if ok:
+        return RedirectResponse(url="/?msg=恢复成功", status_code=303)
+    return HTMLResponse(f"恢复失败（已回滚）: {err}", status_code=500)
+
+
+@app.post("/do_upload_restore")
+async def do_upload_restore(request: Request, file: UploadFile = File(...)):
+    verify_auth(request)
+    config = load_config()
+    backup_dir = config.get("BACKUP_DIR", "/backup")
+    data_dir = config.get("DATA_DIR", "/data")
+    zip_password = config.get("ZIP_PASSWORD", "")
+    db_type = config.get("DB_TYPE", "sqlite")
+    sqlite_db_file = config.get("SQLITE_DB_FILE", "db.sqlite3")
+    create_temp = str(config.get("CREATE_TEMP_BACKUP", "true")).lower() == "true"
+
+    if not file.filename or not file.filename.endswith(".zip"):
+        return HTMLResponse("请上传 .zip 格式的备份文件", status_code=400)
+
+    save_path = os.path.join(backup_dir, "_upload_" + file.filename)
+    os.makedirs(backup_dir, exist_ok=True)
+    try:
+        with open(save_path, "wb") as f:
+            while chunk := await file.read(1024 * 1024):
+                f.write(chunk)
+    except Exception as e:
+        return HTMLResponse(f"上传文件失败: {e}", status_code=500)
+
+    ok, err = _do_restore_internal(data_dir, save_path, zip_password, db_type, sqlite_db_file, create_temp)
+    try:
+        if os.path.exists(save_path):
+            os.remove(save_path)
+    except Exception:
+        pass
+    if ok:
+        return RedirectResponse(url="/?msg=从上传文件恢复成功", status_code=303)
+    return HTMLResponse(f"恢复失败（已回滚）: {err}", status_code=500)
 
 # -- 日志 --
 @app.get("/logs")

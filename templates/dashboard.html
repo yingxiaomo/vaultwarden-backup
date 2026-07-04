@@ -47,19 +47,31 @@ body{background:#f5f6fa;font-family:'Segoe UI',sans-serif}.container{max-width:1
 {% endif %}
 
 <div class="row g-3 mb-3">
-<div class="col-md-6">
+<div class="col-md-4">
 <div class="card"><div class="card-header"><h5><i class="bi bi-cloud-upload"></i> 立即备份</h5></div>
 <div class="card-body">
 <form action="/do_backup" method="post">
 <button type="submit" class="btn btn-primary w-100"><i class="bi bi-play-circle"></i> 执行备份</button>
 </form>
 </div></div></div>
-<div class="col-md-6">
+<div class="col-md-4">
 <div class="card"><div class="card-header"><h5><i class="bi bi-arrow-counterclockwise"></i> 快速恢复</h5></div>
 <div class="card-body">
 <p class="text-muted mb-2">从备份列表中选择文件点击"恢复"按钮</p>
 <p class="text-muted small mb-0">恢复前会自动创建回滚点</p>
+</div></div>
+<div class="col-md-4">
+<div class="card"><div class="card-header"><h5><i class="bi bi-upload"></i> 上传恢复</h5></div>
+<div class="card-body">
+<form action="/do_upload_restore" method="post" enctype="multipart/form-data" onsubmit="return confirm('确定从上传的文件恢复？将停止 Vaultwarden 并替换当前数据。')">
+<div class="mb-2">
+<input type="file" class="form-control form-control-sm" name="file" accept=".zip" required>
+</div>
+<button type="submit" class="btn btn-warning w-100"><i class="bi bi-cloud-upload"></i> 上传并恢复</button>
+</form>
 </div></div></div>
+</div>
+</div>
 </div>
 
 <div class="card">
