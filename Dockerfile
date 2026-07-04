@@ -1,6 +1,12 @@
-﻿FROM alpine:3.21
+﻿# Build stage
+FROM golang:1.23-alpine AS builder
+WORKDIR /app
+COPY go.mod main.go ./
+RUN go build -o vaultwarden-backup .
 
-# 版本信息 — 构建时通过 --build-arg VERSION= 传入
+# Runtime stage
+FROM alpine:3.21
+
 ARG VERSION
 LABEL org.opencontainers.image.title="Vaultwarden Backup" \
       org.opencontainers.image.description="自动备份 Vaultwarden 数据并同步到云存储" \
@@ -10,7 +16,6 @@ LABEL org.opencontainers.image.title="Vaultwarden Backup" \
 ENV RCLONE_CONFIG=/config/rclone/rclone.conf
 ENV APP_VERSION=${VERSION}
 
-# 安装依赖 + 清理 pip 自身和缓存，大幅减小镜像体积
 RUN apk add --no-cache \
     mariadb-client \
     sqlite \
@@ -19,7 +24,6 @@ RUN apk add --no-cache \
     unzip \
     python3 \
     py3-pip \
-    bash \
     tzdata \
     curl \
     postgresql-client \
@@ -28,14 +32,9 @@ RUN apk add --no-cache \
     && pip3 install --no-cache-dir --break-system-packages apprise \
     && rm -rf /usr/lib/python3.*/ensurepip \
               /usr/lib/python3.*/site-packages/pip \
-              /root/.cache/pip \
-              /root/.cache
+              /root/.cache/pip
 
-# 复制脚本
-COPY backup.sh backup_en.sh entrypoint.sh /app/
-
-RUN chmod +x /app/backup.sh /app/backup_en.sh /app/entrypoint.sh
+COPY --from=builder /app/vaultwarden-backup /app/vaultwarden-backup
 
 WORKDIR /app
-
-CMD ["/app/entrypoint.sh"]
+CMD ["/app/vaultwarden-backup"]

@@ -35,3 +35,4 @@ rclone_config/
 
 # 环境变量导出文件
 env.sh
+vaultwarden-backup.exe
