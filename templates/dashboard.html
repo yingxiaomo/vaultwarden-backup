@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -7,113 +7,199 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 <style>
-body{background:#f5f6fa;font-family:'Segoe UI',sans-serif}.container{max-width:1200px}
-.nav-pills{background:#fff;border-radius:8px;padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:24px}
-.nav-pills .nav-link{color:#495057;border-radius:6px;padding:10px 20px;margin:0 4px}
-.nav-pills .nav-link.active{background:#343a40;color:#fff}
-.nav-pills .nav-link:hover{background:rgba(0,0,0,.05)}
-.card{border:none;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-bottom:20px}
-.card-header{background:#343a40;color:#fff;border-radius:12px 12px 0 0;padding:14px 20px}
-.card-header h5{margin:0;font-weight:600}
+body{background:#f0f2f5;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+.container{max-width:1200px}
+/* 导航 */
+.nav-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.nav-header h3{font-weight:700;color:#1a1a2e}
+.nav-header h3 i{color:#4361ee;margin-right:8px}
+.nav-tabs-custom{display:flex;gap:4px;background:#fff;border-radius:12px;padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:24px}
+.nav-tabs-custom a{color:#6c757d;border-radius:8px;padding:10px 24px;text-decoration:none;font-weight:500;transition:all .2s}
+.nav-tabs-custom a:hover{background:rgba(0,0,0,.04);color:#1a1a2e}
+.nav-tabs-custom a.active{background:#4361ee;color:#fff;box-shadow:0 2px 8px rgba(67,97,238,.3)}
+/* 卡片 */
+.card{border:none;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:20px;transition:box-shadow .2s}
+.card:hover{box-shadow:0 4px 20px rgba(0,0,0,.1)}
+.card-header{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;border-radius:14px 14px 0 0;padding:16px 20px;border-bottom:none}
+.card-header h5{margin:0;font-weight:600;font-size:16px}
+.card-header h5 i{margin-right:8px;opacity:.9}
 .card-body{padding:20px}
-.btn{border-radius:8px;padding:10px 24px;font-weight:600}
-.btn-primary{background:#0d6efd;border-color:#0d6efd}
-.btn-primary:hover{background:#0b5ed7;transform:translateY(-1px);box-shadow:0 4px 12px rgba(13,110,253,.3)}
-.btn-danger{background:#dc3545;border-color:#dc3545}
-.table thead{background:#495057;color:#fff}.table thead th{padding:12px 16px;font-weight:600}
-.log-box{background:#1e1e1e;color:#e9ecef;border-radius:8px;padding:16px;height:280px;overflow-y:auto;font:13px/1.5 'Courier New',monospace}
+/* 操作卡片颜色 */
+.card-action-backup .card-header{background:linear-gradient(135deg,#4361ee,#3a56d4)}
+.card-action-restore .card-header{background:linear-gradient(135deg,#e36414,#d45a12)}
+.card-action-upload .card-header{background:linear-gradient(135deg,#06d6a0,#05b88a)}
+/* 按钮 */
+.btn{border-radius:10px;padding:12px 24px;font-weight:600;transition:all .2s}
+.btn:hover{transform:translateY(-2px)}
+.btn-backup{background:#4361ee;border-color:#4361ee;color:#fff}
+.btn-backup:hover{background:#3a56d4;box-shadow:0 4px 14px rgba(67,97,238,.35);color:#fff}
+.btn-restore{background:#e36414;border-color:#e36414;color:#fff}
+.btn-restore:hover{background:#d45a12;box-shadow:0 4px 14px rgba(227,100,20,.35);color:#fff}
+.btn-upload-restore{background:#06d6a0;border-color:#06d6a0;color:#fff}
+.btn-upload-restore:hover{background:#05b88a;box-shadow:0 4px 14px rgba(6,214,160,.35);color:#fff}
+.btn-outline-logout{border-radius:8px;padding:6px 16px;color:#6c757d;border-color:#dee2e6}
+.btn-outline-logout:hover{background:#f8f9fa;color:#dc3545;border-color:#dc3545}
+/* 表格 */
+.table thead{background:#f8f9fa}
+.table thead th{padding:12px 16px;font-weight:600;color:#495057;border-bottom:2px solid #e9ecef;font-size:14px}
+.table td{padding:12px 16px;vertical-align:middle}
+.table tbody tr{transition:background .15s}
+.table tbody tr:hover{background:#f0f4ff}
+/* 日志 */
+.log-box{background:#1a1a2e;color:#a8b2d1;border-radius:12px;padding:20px;min-height:260px;max-height:400px;overflow-y:auto;font:13px/1.6 'JetBrains Mono','Cascadia Code','Courier New',monospace}
 .log-box pre{margin:0;white-space:pre-wrap;word-wrap:break-word}
-.alert-msg{display:none}
-@media(max-width:768px){.nav-pills{flex-direction:column}.nav-pills .nav-link{margin:2px 0;text-align:center}}
+.log-box .log-timestamp{color:#6c7086}
+.log-box .log-info{color:#7dbeff}
+.log-box .log-ok{color:#06d6a0}
+.log-box .log-warn{color:#ffd166}
+.log-box .log-error{color:#ef476f}
+/* 文件选择器 */
+.form-control-file{border:2px dashed #dee2e6;border-radius:10px;padding:10px;background:#fafbfc;cursor:pointer;transition:all .2s}
+.form-control-file:hover{border-color:#4361ee;background:#f0f4ff}
+.form-control-file:focus-within{border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.15)}
+/* 消息提示 */
+.alert-custom{border-radius:12px;border:none;padding:14px 20px}
+/* 空状态 */
+.empty-state{padding:40px 20px;text-align:center;color:#adb5bd}
+.empty-state i{font-size:48px;display:block;margin-bottom:12px}
+/* 响应式 */
+@media(max-width:768px){
+.nav-tabs-custom{flex-direction:column;gap:2px}
+.nav-tabs-custom a{text-align:center}
+.card-body{padding:16px}
+}
 </style>
 </head>
 <body>
-<div class="container mt-4">
-<div class="d-flex justify-content-between align-items-center mb-3">
-<div><h3 class="mb-0"><i class="bi bi-shield-check"></i> Vaultwarden 备份管理</h3></div>
-<a href="/logout" class="btn btn-outline-secondary btn-sm"><i class="bi bi-box-arrow-right"></i> 退出</a>
-</div>
+<div class="container mt-4 mb-4">
 
-<nav class="nav nav-pills">
-<a class="nav-link active" href="/"><i class="bi bi-speedometer2"></i> 仪表盘</a>
-<a class="nav-link" href="/config"><i class="bi bi-gear"></i> 配置</a>
-</nav>
+  <!-- 顶栏 -->
+  <div class="nav-header">
+    <h3><i class="bi bi-shield-check"></i> Vaultwarden 备份管理</h3>
+    <a href="/logout" class="btn btn-outline-logout"><i class="bi bi-box-arrow-right"></i> 退出</a>
+  </div>
 
-{% if msg %}
-<div class="alert alert-success alert-dismissible fade show" role="alert">
-<i class="bi bi-check-circle"></i> {{ msg }}
-<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-{% endif %}
+  <!-- 标签导航 -->
+  <nav class="nav-tabs-custom">
+    <a class="active" href="/"><i class="bi bi-speedometer2"></i> 仪表盘</a>
+    <a href="/config"><i class="bi bi-gear"></i> 配置</a>
+  </nav>
 
-<div class="row g-3 mb-3">
-<div class="col-md-4">
-<div class="card"><div class="card-header"><h5><i class="bi bi-cloud-upload"></i> 立即备份</h5></div>
-<div class="card-body">
-<form action="/do_backup" method="post">
-<button type="submit" class="btn btn-primary w-100"><i class="bi bi-play-circle"></i> 执行备份</button>
-</form>
-</div></div></div>
-<div class="col-md-4">
-<div class="card"><div class="card-header"><h5><i class="bi bi-arrow-counterclockwise"></i> 快速恢复</h5></div>
-<div class="card-body">
-<p class="text-muted mb-2">从备份列表中选择文件点击"恢复"按钮</p>
-<p class="text-muted small mb-0">恢复前会自动创建回滚点</p>
-</div></div>
-<div class="col-md-4">
-<div class="card"><div class="card-header"><h5><i class="bi bi-upload"></i> 上传恢复</h5></div>
-<div class="card-body">
-<form action="/do_upload_restore" method="post" enctype="multipart/form-data" onsubmit="return confirm('确定从上传的文件恢复？将停止 Vaultwarden 并替换当前数据。')">
-<div class="mb-2">
-<input type="file" class="form-control form-control-sm" name="file" accept=".zip" required>
-</div>
-<button type="submit" class="btn btn-warning w-100"><i class="bi bi-cloud-upload"></i> 上传并恢复</button>
-</form>
-</div></div></div>
-</div>
-</div>
-</div>
+  {% if msg %}
+  <div class="alert alert-success alert-custom alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i> {{ msg }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endif %}
 
-<div class="card">
-<div class="card-header"><h5><i class="bi bi-clock-history"></i> 备份历史</h5></div>
-<div class="card-body">
-{% if backups %}
-<div class="table-responsive">
-<table class="table table-hover">
-<thead><tr><th>文件名</th><th>大小</th><th>修改时间</th><th>操作</th></tr></thead>
-<tbody>
-{% for b in backups %}
-<tr>
-<td><code>{{ b.name }}</code></td>
-<td>{{ b.size }}</td>
-<td>{{ b.mtime }}</td>
-<td>
-<form action="/do_restore" method="post" class="d-inline" onsubmit="return confirm('确定恢复 {{ b.name }}？将停止 Vaultwarden 并替换当前数据。')">
-<input type="hidden" name="backup_file" value="{{ b.name }}">
-<button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-arrow-counterclockwise"></i> 恢复</button>
-</form>
-</td>
-</tr>
-{% endfor %}
-</tbody>
-</table>
-</div>
-{% else %}
-<p class="text-muted text-center my-4"><i class="bi bi-inbox"></i> 暂无备份文件</p>
-{% endif %}
-</div></div>
+  <!-- 操作卡片 -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-4">
+      <div class="card card-action-backup h-100">
+        <div class="card-header"><h5><i class="bi bi-cloud-upload"></i> 立即备份</h5></div>
+        <div class="card-body d-flex flex-column">
+          <p class="text-muted small mb-3">手动触发一次完整的备份流程，包含数据库导出、压缩加密和云同步。</p>
+          <form action="/do_backup" method="post" class="mt-auto">
+            <button type="submit" class="btn btn-backup w-100"><i class="bi bi-play-circle me-1"></i> 执行备份</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card card-action-restore h-100">
+        <div class="card-header"><h5><i class="bi bi-arrow-counterclockwise"></i> 快速恢复</h5></div>
+        <div class="card-body d-flex flex-column">
+          <p class="text-muted small mb-3">从下方备份列表中选择文件，点击"恢复"即可还原数据。</p>
+          <div class="mt-auto text-center">
+            <i class="bi bi-arrow-down-circle text-muted" style="font-size:24px;opacity:.4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card card-action-upload h-100">
+        <div class="card-header"><h5><i class="bi bi-upload"></i> 上传恢复</h5></div>
+        <div class="card-body d-flex flex-column">
+          <p class="text-muted small mb-3">从本地上传 .zip 备份文件进行恢复，支持加密备份文件。</p>
+          <form action="/do_upload_restore" method="post" enctype="multipart/form-data" class="mt-auto"
+                onsubmit="return confirm('确定从上传的文件恢复？将停止 Vaultwarden 并替换当前数据。')">
+            <div class="mb-3">
+              <input type="file" class="form-control form-control-file" name="file" accept=".zip" required>
+            </div>
+            <button type="submit" class="btn btn-upload-restore w-100"><i class="bi bi-cloud-upload me-1"></i> 上传并恢复</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 
-<div class="card">
-<div class="card-header"><h5><i class="bi bi-terminal"></i> 备份日志</h5></div>
-<div class="card-body">
-<div class="log-box"><pre id="log-content">加载中...</pre></div>
-</div></div>
+  <!-- 备份历史 -->
+  <div class="card">
+    <div class="card-header"><h5><i class="bi bi-clock-history"></i> 备份历史</h5></div>
+    <div class="card-body">
+      {% if backups %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>文件名</th><th>大小</th><th>修改时间</th><th style="width:100px">操作</th></tr></thead>
+          <tbody>
+          {% for b in backups %}
+          <tr>
+            <td><code class="text-dark">{{ b.name }}</code></td>
+            <td><span class="badge bg-light text-dark">{{ b.size }}</span></td>
+            <td><i class="bi bi-calendar3 me-1 text-muted"></i>{{ b.mtime }}</td>
+            <td>
+              <form action="/do_restore" method="post" class="d-inline"
+                    onsubmit="return confirm('确定恢复 {{ b.name }}？将停止 Vaultwarden 并替换当前数据。')">
+                <input type="hidden" name="backup_file" value="{{ b.name }}">
+                <button type="submit" class="btn btn-restore btn-sm"><i class="bi bi-arrow-counterclockwise me-1"></i>恢复</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <p class="mb-0">暂无备份文件</p>
+        <small class="text-muted">点击上方"执行备份"开始你的第一次备份</small>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 实时日志 -->
+  <div class="card">
+    <div class="card-header"><h5><i class="bi bi-terminal"></i> 备份日志</h5></div>
+    <div class="card-body">
+      <div class="log-box" id="log-scroll"><pre id="log-content">加载中...</pre></div>
+    </div>
+  </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-function loadLogs(){fetch('/logs').then(r=>r.json()).then(d=>{const el=document.getElementById('log-content');el.textContent=d.logs;el.parentElement.scrollTop=el.parentElement.scrollHeight}).catch(e=>{document.getElementById('log-content').textContent='加载日志失败: '+e})}
-loadLogs();setInterval(loadLogs,5000);
+function loadLogs(){
+  fetch('/logs')
+    .then(r => r.json())
+    .then(d => {
+      const el = document.getElementById('log-content');
+      if (d.logs) {
+        el.textContent = d.logs;
+      } else {
+        el.textContent = '暂无日志';
+      }
+      const scroll = document.getElementById('log-scroll');
+      scroll.scrollTop = scroll.scrollHeight;
+    })
+    .catch(e => {
+      document.getElementById('log-content').textContent = '加载日志失败: ' + e;
+    });
+}
+loadLogs();
+setInterval(loadLogs, 5000);
 </script>
 </body>
 </html>
