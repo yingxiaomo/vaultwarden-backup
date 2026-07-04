@@ -186,17 +186,9 @@ async def do_setup(
     request: Request,
     web_user: str = Form(...),
     web_pass: str = Form(...),
-    db_type: str = Form("sqlite"),
-    tz: str = Form("Asia/Shanghai"),
-    cron: str = Form("0 2 * * *"),
 ):
     config = {
         "WEB_USER": web_user, "WEB_PASS": web_pass,
-        "DB_TYPE": db_type, "TZ": tz, "CRON_SCHEDULE": cron,
-        "BACKUP_PREFIX": "vaultwarden_backup",
-        "DATA_DIR": "/data", "BACKUP_DIR": "/backup",
-        "LOCAL_BACKUP_KEEP_DAYS": "15", "RUN_ON_STARTUP": "true",
-        "SQLITE_DB_FILE": "db.sqlite3",
     }
     save_config(config)
     return RedirectResponse(url="/login", status_code=303)
