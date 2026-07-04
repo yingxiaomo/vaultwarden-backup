@@ -70,8 +70,8 @@ services:
       - ./rclone_config:/config/rclone/
 
     healthcheck:
-      test: ["CMD", "sh", "-c", "pgrep crond > /dev/null && [ -x /app/backup.sh ] && echo healthy"]
-      interval: 1m
+      test: ["CMD-SHELL", "kill -0 1 2>/dev/null || exit 1"]
+      interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s

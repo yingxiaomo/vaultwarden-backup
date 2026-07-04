@@ -2,7 +2,9 @@
 FROM golang:1.23-alpine AS builder
 WORKDIR /app
 COPY go.mod main.go ./
-RUN go build -o vaultwarden-backup .
+RUN apk add --no-cache upx \
+ && CGO_ENABLED=0 go build -tags timetzdata -ldflags="-s -w" -o vaultwarden-backup . \
+ && upx --best vaultwarden-backup
 
 # Runtime stage
 FROM alpine:3.21
@@ -17,22 +19,12 @@ ENV RCLONE_CONFIG=/config/rclone/rclone.conf
 ENV APP_VERSION=${VERSION}
 
 RUN apk add --no-cache \
-    mariadb-client \
-    sqlite \
+    postgresql-client \
     rclone \
     zip \
     unzip \
-    python3 \
-    py3-pip \
-    tzdata \
-    curl \
-    postgresql-client \
-    jq \
-    && mkdir -p /app /vw_data /backup /config/rclone \
-    && pip3 install --no-cache-dir --break-system-packages apprise \
-    && rm -rf /usr/lib/python3.*/ensurepip \
-              /usr/lib/python3.*/site-packages/pip \
-              /root/.cache/pip
+    sqlite \
+    && mkdir -p /app /vw_data /backup /config/rclone
 
 COPY --from=builder /app/vaultwarden-backup /app/vaultwarden-backup
 
