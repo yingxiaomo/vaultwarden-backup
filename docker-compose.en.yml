@@ -1,77 +1,19 @@
-version: '3.8'
-
 services:
   vaultwarden-backup:
-    image: ghcr.io/yingxiaomo/vaultwarden-backup:latest
+    image: ghcr.io/yingxiaomo/vaultwarden-backup:dev
     container_name: vaultwarden_backup
     restart: on-failure
-    environment:
-      # ---------------------------------------------------------
-      # Database Configuration
-      # ---------------------------------------------------------
-      # Database type: sqlite (default), mysql, postgres
-      - DB_TYPE=sqlite
-
-      # SQLite database file name (Vaultwarden default is db.sqlite3)
-      # - SQLITE_DB_FILE=db.sqlite3
-
-      # For MySQL or PostgreSQL:
-      # - DB_HOST=db
-      # - DB_PORT=5432
-      # - DB_USER=vaultwarden
-      # - DB_PASSWORD=your_db_password
-      # - DB_NAME=vaultwarden
-
-      # ---------------------------------------------------------
-      # Backup and Encryption Configuration
-      # ---------------------------------------------------------
-      # - ZIP_PASSWORD=your_secure_zip_password
-
-      # ---------------------------------------------------------
-      # Rclone Cloud Sync Configuration
-      # ---------------------------------------------------------
-      - RCLONE_REMOTE=my_onedrive:/vaultwarden_backup
-
-      # - RCLONE_KEEP_DAYS=15
-
-      # ---------------------------------------------------------
-      # Apprise Notification Configuration
-      # ---------------------------------------------------------
-      - APPRISE_URL=tgram://123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ/987654321
-
-      # - APPRISE_API_URL=http://apprise:8000
-
-      # ---------------------------------------------------------
-      # Scheduled Task Configuration
-      # ---------------------------------------------------------
-      - CRON_SCHEDULE=0 2 * * *
-
-      - RUN_ON_STARTUP=true
-
-      - LOCAL_BACKUP_KEEP_DAYS=15
-
-      # - BACKUP_PREFIX=vaultwarden_backup
-
-      # ---------------------------------------------------------
-      # Network Proxy Configuration (optional)
-      # ---------------------------------------------------------
-      # - HTTP_PROXY=http://192.168.1.100:7890
-      # - HTTPS_PROXY=http://192.168.1.100:7890
-
-      - TZ=Asia/Shanghai
-
-      - LANGUAGE=en
-
+    ports:
+      - "9876:9876"
     volumes:
-      - /YourDirectory/data:/data:ro
-
+      - ./data:/data
       - ./backups:/backup
-
       - ./rclone_config:/config/rclone/
-
+      - ./config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
-      test: ["CMD", "sh", "-c", "pgrep crond > /dev/null && [ -x /app/backup.sh ] && echo healthy"]
-      interval: 1m
+      test: ["CMD", "curl", "-f", "http://localhost:9876/health"]
+      interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
