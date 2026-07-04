@@ -16,13 +16,13 @@ echo "Vaultwarden Backup Container Started"
 echo "Cron Schedule: $CRON_SCHEDULE"
 echo "=================================================="
 
-# 将当前所有环境变量导出，并兼容 Alpine 的 sh 解析
-# 安全导出环境变量，正确处理特殊字符（单引号、$、等号）
+# 安全导出环境变量，正确处理单引号、$、等号等所有特殊字符
+# 将值中的单引号替换为结束引号-转义-重新开始引号，再用单引号整体包裹
 printenv | while IFS='=' read -r name rest; do
     # 跳过 no_proxy 相关变量（可能含通配符，影响 shell 解析）
     case "$name" in no_proxy|NO_PROXY) continue ;; esac
-    # 将值中的单引号转义后，用单引号整体包裹，防止变量展开
-    rest_escaped="${rest//'/'\\''}"
+    # 将单引号替换为 '\''（结束单引号 + 转义单引号 + 重新开始单引号）
+    rest_escaped="${rest//\'/\'\\\'\'}"
     printf "export %s='%s'\n" "$name" "$rest_escaped"
 done > /app/env.sh
 

@@ -1,6 +1,7 @@
-# Vaultwarden Backup
+﻿# Vaultwarden Backup
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/yingxiaomo/vaultwarden-backup.svg)](https://hub.docker.com/r/yingxiaomo/vaultwarden-backup)
+[![GHCR](https://img.shields.io/badge/GitHub%20Container%20Registry-ghcr.io-blue?logo=github)](https://github.com/yingxiaomo/vaultwarden-backup/pkgs/container/vaultwarden-backup)
+[![Build](https://github.com/yingxiaomo/vaultwarden-backup/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/yingxiaomo/vaultwarden-backup/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## 🌍 语言切换 (Language Switch)
@@ -34,7 +35,13 @@
 
 ### 2. 编写 `docker-compose.yml`
 
-请直接使用项目根目录中的 [docker-compose.yml](docker-compose.yml) 文件作为配置模板，根据您的实际需求修改相应的环境变量。
+请直接使用项目根目录中的 [docker-compose.yml](docker-compose.yml) 文件作为配置模板，根据你的实际需求修改相应的环境变量。
+
+镜像托管在 GitHub Container Registry，无需额外登录即可拉取：
+
+```bash
+docker pull ghcr.io/yingxiaomo/vaultwarden-backup:latest
+```
 
 ### 3. 启动服务
 
@@ -44,11 +51,23 @@
 docker-compose up -d
 ```
 
+## 🔖 版本号说明
+
+版本号由 CI 自动生成，无需手动管理：
+
+| 标签 | 示例 | 说明 |
+|:---|:---|:---|
+| `latest` | `latest` | 最新的稳定版本 |
+| `<数字>` | `42` | 版本号 = Git commit 总数，单调递增，越大越新 |
+| `<日期>` | `20260704` | 构建日期，方便按天回溯 |
+| `<短 SHA>` | `abc1234` | Git commit 短哈希，精确对应源码版本 |
+
 ## ⚙ 环境变量说明 (Environment Variables)
 
 | 环境变量                     | 说明                                        | 默认值                  | 必填 |
 | :----------------------- | :---------------------------------------- | :------------------- | :- |
 | `DB_TYPE`                | 数据库类型 (`sqlite`, `mysql`, `postgres`)     | `sqlite`             | 否  |
+| `SQLITE_DB_FILE`         | SQLite 数据库文件名 (Vaultwarden 默认)            | `db.sqlite3`         | 否  |
 | `ZIP_PASSWORD`           | 压缩包 AES 加密密码 (可选，如果不设置则进行非加密打包)           | 无                    | 否  |
 | `CRON_SCHEDULE`          | 定时备份的 Cron 表达式                            | `0 2 * * *` (每天凌晨2点) | 否  |
 | `RUN_ON_STARTUP`         | 容器启动时是否立即执行一次备份 (`true`/`false`)          | `true`               | 否  |

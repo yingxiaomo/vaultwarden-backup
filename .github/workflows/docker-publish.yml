@@ -1,4 +1,4 @@
-name: Docker Build and Publish
+ï»¿name: Docker Build and Publish
 
 on:
   push:
@@ -10,23 +10,26 @@ on:
       - ".gitignore"
 
 env:
-  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/vaultwarden-backup
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
-  
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: ×Ô¶¯Éú³É°æ±¾ºÅ
+      - name: è‡ªåŠ¨ç”Ÿæˆç‰ˆæœ¬å·
         id: version
         run: |
-          BASE=$(cat VERSION)
           REV=$(git rev-list --count HEAD)
-          echo "version=${BASE}.${REV}" >> $GITHUB_OUTPUT
-          echo "Generated version: ${BASE}.${REV}"
+          echo "version=${REV}" >> $GITHUB_OUTPUT
+          echo "Generated version: ${REV}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -34,25 +37,22 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Docker Hub
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            # ×Ô¶¯´òÉÏ latest ±êÇ©
             type=raw,value=latest,enable={{ is_default_branch }}
-            # ×Ô¶¯Éú³ÉµÄ°æ±¾ºÅ±êÇ©£¬ÀýÈç: 1.0.42
             type=raw,value=${{ steps.version.outputs.version }}
-            # ÈÕÆÚ±êÇ©£¬¸ñÊ½: YYYYMMDD
             type=raw,value={{date 'YYYYMMDD'}}
-            # commit sha ¶Ì±êÇ©
             type=sha,format=short
           labels: |
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
