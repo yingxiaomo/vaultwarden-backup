@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 # ==========================================
 # Vaultwarden 备份脚本 (支持 SQLite/MySQL/PostgreSQL + Apprise 通知)
@@ -11,12 +11,13 @@ export ALL_PROXY="${ALL_PROXY:-}"     # SOCKS5 代理地址，例如 socks5://19
 
 # 基础配置变量 (可通过环境变量覆盖)
 DB_TYPE="${DB_TYPE:-sqlite}"          # 数据库类型: sqlite, mysql, postgres
-DATA_DIR="${DATA_DIR:-/data}"      # Vaultwarden 数据目录
+DATA_DIR="${DATA_DIR:-/data}"         # Vaultwarden 数据目录
 BACKUP_DIR="${BACKUP_DIR:-/backup}"   # 本地临时备份目录
-ZIP_PASSWORD="${ZIP_PASSWORD:-}"      # 压缩包加密密码 (必填)
+ZIP_PASSWORD="${ZIP_PASSWORD:-}"      # 压缩包加密密码 (可选)
 APPRISE_URL="${APPRISE_URL:-}"        # Apprise 通知 URL (直接使用命令行工具)
 APPRISE_API_URL="${APPRISE_API_URL%/}"  # Apprise 服务 API 地址 (使用独立 Apprise 服务)
 RCLONE_REMOTE="${RCLONE_REMOTE:-}"    # Rclone 远程路径，例如 myremote:/vaultwarden_backup
+SQLITE_DB_FILE="${SQLITE_DB_FILE:-db.sqlite3}"  # SQLite 数据库文件名（可配置）
 
 # 时间戳，用于生成唯一的文件名
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")    # 格式: 年月日_时分秒
@@ -25,14 +26,14 @@ PREFIX="${BACKUP_PREFIX:-vaultwarden_backup}"
 BACKUP_NAME="${PREFIX}_${TIMESTAMP}" # 备份文件基础名称
 SQL_FILE="${BACKUP_DIR}/${BACKUP_NAME}.sql"   # 导出的 SQL 文件路径
 ZIP_FILE="${BACKUP_DIR}/${BACKUP_NAME}.zip"   # 最终的加密压缩包路径
-
-# 压缩包生成完毕标志
+# 压缩包生成完毕标记
 ZIP_DONE=0
+
 # 无论脚本如何退出，都尝试删除临时文件
 cleanup() {
   rm -f "$SQL_FILE"
   # 清理可能残留的中转组装目录
-  rm -rf "${BACKUP_DIR}/staging_"* # 只有在打包"还没完成"时就异常退出，才去清理残缺的 zip 文件
+  rm -rf "${BACKUP_DIR}/staging_"*
   if [ "$ZIP_DONE" -ne 1 ] && [ -f "$ZIP_FILE" ]; then
       rm -f "$ZIP_FILE"
   fi
@@ -58,19 +59,21 @@ send_notification() {
                  -H "Content-Type: application/json" \
                  -d "$json"
                 
-        # 在 API 地址里直接写了配置路径 (如 `http://apprise:8000/notify/mybot)`  (Stateful 模式)
+        # 在 API 地址里直接写了配置路径 (如 `http://apprise:8000/notify/mybot`) (Stateful 模式)
         else
             # 使用 --data-urlencode 提交，完美保留换行符并防止特殊字符截断表单
             curl -s -X POST "$APPRISE_API_URL" \
                  --data-urlencode "title=$title" \
                  --data-urlencode "body=$body"
         fi
-        echo "" # 补一个换行避免日志粘连
+        echo "" # 补一个换行避免日志粘在一起
         
     # 回退使用本地 Apprise 命令行工具
     elif [ -n "$APPRISE_URL" ]; then
         echo "使用本地 Apprise 命令行工具发送通知..."
-        apprise -t "$title" -b "$body" "$APPRISE_URL"
+        if ! apprise -t "$title" -b "$body" "$APPRISE_URL"; then
+            echo "警告: Apprise 通知发送失败"
+        fi
     else
         echo "未配置 APPRISE_URL 或 APPRISE_API_URL，跳过通知发送。"
     fi
@@ -95,16 +98,21 @@ fi
 
 # 检查磁盘空间
 # 使用 df -Pm 以 MB 为单位输出，避免在 32 位系统上发生整数溢出
-# 逻辑：先锁定含有挂载点的那一行，提取倒数第三列，并强制剔除所有非数字字符
 FREE_SPACE_MB=$(df -Pm "$BACKUP_DIR" | awk '/^\// || /^[0-9]/ {print $(NF-2)}' | sed 's/[^0-9]//g')
-# 5GB 转换为 MB
-MIN_SPACE_MB=$((5 * 1024))
 
-if [ "$FREE_SPACE_MB" -lt "$MIN_SPACE_MB" ]; then
-    # 获取剩余空间
-    HUMAN_FREE=$(df -h "$BACKUP_DIR" | tail -n 1 | awk '{print $4}')
-    echo "警告: 备份目录所在磁盘空间不足，剩余空间为 $HUMAN_FREE，小于 5GB！"
-    send_notification "Vaultwarden 备份警告 ⚠️" "备份目录所在磁盘空间不足，剩余空间为 $HUMAN_FREE，小于 5GB，可能导致备份失败。"
+# 如果磁盘空间获取失败（例如 df 输出格式异常），跳过检查
+if [ -n "$FREE_SPACE_MB" ]; then
+    # 5GB 转换为 MB
+    MIN_SPACE_MB=$((5 * 1024))
+
+    if [ "$FREE_SPACE_MB" -lt "$MIN_SPACE_MB" ]; then
+        # 获取剩余空间
+        HUMAN_FREE=$(df -h "$BACKUP_DIR" | tail -n 1 | awk '{print $4}')
+        echo "警告: 备份目录所在磁盘空间不足，剩余空间为 $HUMAN_FREE，小于 5GB！"
+        send_notification "Vaultwarden 备份警告 ⚠️" "备份目录所在磁盘空间不足，剩余空间为 $HUMAN_FREE，小于 5GB，可能导致备份失败。"
+    fi
+else
+    echo "警告: 无法获取磁盘空间信息，跳过空间检查。"
 fi
 
 echo "开始执行 Vaultwarden 备份任务..."
@@ -115,16 +123,15 @@ echo "正在备份数据库 (类型: $DB_TYPE)..."
 # 检查数据库备份工具是否存在
 case "$DB_TYPE" in
     sqlite)
-        # 检查 sqlite3 命令是否存在
         if ! command -v sqlite3 > /dev/null 2>&1; then
             echo "错误: 找不到 sqlite3 命令，请确保已安装 SQLite 工具。"
             send_notification "Vaultwarden 备份失败 ❌" "找不到 sqlite3 命令，请确保已安装 SQLite 工具。"
             exit 1
         fi
-        # SQLite 备份逻辑: 使用 .backup 命令安全导出
-        SQLITE_DB="${DATA_DIR}/db.sqlite3" # 默认 SQLite 数据库路径
+        # SQLite 备份逻辑: 使用可配置的数据库文件名
+        SQLITE_DB="${DATA_DIR}/${SQLITE_DB_FILE}"
         if [ -f "$SQLITE_DB" ]; then
-            echo "正在使用 SQLite .backup 命令备份数据库..."
+            echo "正在使用 sqlite3 .backup 命令备份数据库..."
             if sqlite3 "$SQLITE_DB" ".backup '$SQL_FILE'"; then
                 echo "✅ SQLite 数据库备份成功。"
             else
@@ -134,27 +141,28 @@ case "$DB_TYPE" in
             fi
         else
             echo "错误: 找不到 SQLite 数据库文件 $SQLITE_DB"
-            send_notification "Vaultwarden 备份失败 ❌" "找不到 SQLite 数据库文件。"
+            echo "提示: 可通过 SQLITE_DB_FILE 环境变量指定数据库文件名（默认: db.sqlite3）"
+            send_notification "Vaultwarden 备份失败 ❌" "找不到 SQLite 数据库文件，请检查 DATA_DIR 和 SQLITE_DB_FILE 配置。"
             exit 1
         fi
         ;;
     mysql)
-        # 检查 mysqldump 命令是否存在
         if ! command -v mysqldump > /dev/null 2>&1; then
             echo "错误: 找不到 mysqldump 命令，请确保已安装 MySQL 客户端工具。"
             send_notification "Vaultwarden 备份失败 ❌" "找不到 mysqldump 命令，请确保已安装 MySQL 客户端工具。"
             exit 1
         fi
-        # 检查必要的环境变量
         if [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ] || [ -z "$DB_NAME" ]; then
             echo "错误: MySQL 备份需要设置 DB_USER, DB_PASSWORD 和 DB_NAME 环境变量。"
             send_notification "Vaultwarden 备份失败 ❌" "MySQL 备份需要设置 DB_USER, DB_PASSWORD 和 DB_NAME 环境变量。"
             exit 1
         fi
-        # MySQL/MariaDB 备份逻辑: 使用 mysqldump 导出
-        export MYSQL_PWD="${DB_PASSWORD}" 
+        # MySQL/MariaDB 备份逻辑: 使用 --password 参数替代 MYSQL_PWD 环境变量
         echo "正在使用 mysqldump 备份 MySQL 数据库..."
-        if mysqldump --single-transaction --quick --opt -h "${DB_HOST:-db}" -P "${DB_PORT:-3306}" -u "${DB_USER}" "${DB_NAME}" > "$SQL_FILE"; then
+        if mysqldump --single-transaction --quick --opt \
+            -h "${DB_HOST:-db}" -P "${DB_PORT:-3306}" \
+            -u "${DB_USER}" --password="${DB_PASSWORD}" \
+            "${DB_NAME}" > "$SQL_FILE"; then
             echo "✅ MySQL 数据库备份成功。"
         else
             echo "错误: MySQL 数据库备份失败！"
@@ -163,28 +171,29 @@ case "$DB_TYPE" in
         fi
         ;;
     postgres)
-        # 检查 pg_dump 命令是否存在
         if ! command -v pg_dump > /dev/null 2>&1; then
             echo "错误: 找不到 pg_dump 命令，请确保已安装 PostgreSQL 客户端工具。"
             send_notification "Vaultwarden 备份失败 ❌" "找不到 pg_dump 命令，请确保已安装 PostgreSQL 客户端工具。"
             exit 1
         fi
-        # 检查必要的环境变量
         if [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ] || [ -z "$DB_NAME" ]; then
             echo "错误: PostgreSQL 备份需要设置 DB_USER, DB_PASSWORD 和 DB_NAME 环境变量。"
             send_notification "Vaultwarden 备份失败 ❌" "PostgreSQL 备份需要设置 DB_USER, DB_PASSWORD 和 DB_NAME 环境变量。"
             exit 1
         fi
         # PostgreSQL 备份逻辑: 使用 pg_dump 导出
-        export PGPASSWORD="${DB_PASSWORD}" 
+        export PGPASSWORD="${DB_PASSWORD}"
         echo "正在使用 pg_dump 备份 PostgreSQL 数据库..."
-        if pg_dump --no-owner --no-privileges --clean -h "${DB_HOST:-db}" -p "${DB_PORT:-5432}" -U "${DB_USER}" -d "${DB_NAME}" -F p > "$SQL_FILE"; then
+        if pg_dump --no-owner --no-privileges --clean \
+            -h "${DB_HOST:-db}" -p "${DB_PORT:-5432}" \
+            -U "${DB_USER}" -d "${DB_NAME}" -F p > "$SQL_FILE"; then
             echo "✅ PostgreSQL 数据库备份成功。"
         else
             echo "错误: PostgreSQL 数据库备份失败！"
             send_notification "Vaultwarden 备份失败 ❌" "PostgreSQL 数据库备份失败，请检查数据库连接和权限。"
             exit 1
         fi
+        unset PGPASSWORD
         ;;
     *)
         echo "错误: 不支持的数据库类型 $DB_TYPE"
@@ -192,13 +201,6 @@ case "$DB_TYPE" in
         exit 1
         ;;
 esac
-
-# 检查数据库备份是否成功
-if [ $? -ne 0 ]; then
-    echo "错误: 数据库备份失败！"
-    send_notification "Vaultwarden 备份失败 ❌" "数据库 ($DB_TYPE) 导出过程中发生错误。"
-    exit 1
-fi
 
 # 2. 打包逻辑
 echo "正在组装文件并打包..."
@@ -211,12 +213,11 @@ mkdir -p "${STAGING_DIR}/data"
 mv "$SQL_FILE" "${STAGING_DIR}/"
 
 # [步骤 2]: 将 /data 目录下的内容完整复制到中转目录的 data 文件夹中
-# 这样做是为了解压时，得到的就是一个名叫 data 的文件夹，方便恢复
+shopt -s nullglob
 cp -a "$DATA_DIR"/* "${STAGING_DIR}/data/" 2>/dev/null || true
+shopt -u nullglob
 
-# 【关键细节】: 删除物理复制过来的 sqlite 数据库文件。
-# 因为我们前面已经用专用命令逻辑导出了 SQL 脚本，这里如果不删，
-# 压缩包体积会翻倍，且恢复时可能会引起数据库文件冲突。
+# 删除物理复制过来的 sqlite 数据库文件，避免 zip 体积翻倍和恢复冲突
 rm -f "${STAGING_DIR}/data/"*.sqlite3* 2>/dev/null || true
 
 # [步骤 3]: 切换到中转目录执行打包
@@ -224,14 +225,17 @@ cd "${STAGING_DIR}" || exit 1
 
 if [ -z "$ZIP_PASSWORD" ]; then
     echo "使用非加密方式打包..."
-    zip -r -q "$ZIP_FILE" .
+    # 排除隐藏文件（如 .DS_Store、.gitkeep 等），保持压缩包整洁
+    zip -r -q "$ZIP_FILE" . -x ".*"
 else
     echo "使用加密方式打包..."
-    zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" .
+    # 排除隐藏文件（如 .DS_Store、.gitkeep 等），保持压缩包整洁
+    zip -r -P "$ZIP_PASSWORD" -q "$ZIP_FILE" . -x ".*"
 fi
 
 # 检查打包是否成功
-if [ $? -ne 0 ]; then
+ZIP_EXIT_CODE=$?
+if [ $ZIP_EXIT_CODE -ne 0 ]; then
     echo "错误: 打包失败！"
     send_notification "Vaultwarden 备份失败 ❌" "使用 zip 打包过程中发生错误，请检查。"
     exit 1
@@ -278,48 +282,68 @@ FILE_SIZE=$(du -h "$ZIP_FILE" | cut -f1)
 
 # 3. Rclone 上传逻辑 (如果配置了)
 if [ -n "$RCLONE_REMOTE" ]; then
-    # 测试 Rclone 远程连接 (全局变量已生效，无需指定 --config)
-    echo "正在测试 Rclone 远程连接..."
+    echo "正在检查 Rclone 远程配置..."
     if ! rclone listremotes | grep -q "^${RCLONE_REMOTE%%:*}:"; then
-        echo "❌ 警告: 找不到 Rclone 配置的远程端: ${RCLONE_REMOTE%%:*}"
-        send_notification "Vaultwarden 备份警告 ⚠️" "找不到 Rclone 配置的远程端: ${RCLONE_REMOTE%%:*}，将尝试继续上传。"
+        echo "❌ 错误: 找不到 Rclone 远程配置: ${RCLONE_REMOTE%%:*}"
+        send_notification "Vaultwarden 备份失败 ❌" "找不到 Rclone 远程配置: ${RCLONE_REMOTE%%:*}，请检查 Rclone 配置文件。"
+        exit 1
     else
-        echo "✅ Rclone 远程连接测试通过。"
+        echo "✅ Rclone 远程配置检查通过。"
     fi
-    
+
     echo "正在使用 Rclone 上传备份到 $RCLONE_REMOTE..."
-    # 使用 rclone copy 上传文件
-    rclone copy "$ZIP_FILE" "$RCLONE_REMOTE"
-    
-    if [ $? -ne 0 ]; then
-        echo "错误: Rclone 上传失败！"
-        send_notification "Vaultwarden 备份失败 ❌" "Rclone 上传到远程存储失败。"
+
+    # 带重试的上传逻辑（最多重试 3 次，应对网络波动）
+    UPLOAD_SUCCESS=0
+    MAX_RETRIES=3
+    RETRY_DELAY=5
+
+    for i in $(seq 1 $MAX_RETRIES); do
+        echo "上传尝试 $i/$MAX_RETRIES..."
+        if rclone copy "$ZIP_FILE" "$RCLONE_REMOTE"; then
+            UPLOAD_SUCCESS=1
+            break
+        fi
+        if [ $i -lt $MAX_RETRIES ]; then
+            echo "上传失败，${RETRY_DELAY} 秒后重试..."
+            sleep $RETRY_DELAY
+            RETRY_DELAY=$((RETRY_DELAY * 2))
+        fi
+    done
+
+    if [ $UPLOAD_SUCCESS -ne 1 ]; then
+        echo "错误: Rclone 上传失败（已重试 $MAX_RETRIES 次）！"
+        send_notification "Vaultwarden 备份失败 ❌" "Rclone 上传到远程存储失败（已重试 $MAX_RETRIES 次）。"
         exit 1
     fi
-    
+
     # 4. 远端备份自动清理
     if [ -z "$RCLONE_KEEP_DAYS" ]; then
         echo "未设置 RCLONE_KEEP_DAYS，跳过远端清理。"
     else
         echo "正在清理远端过期备份（保留 $RCLONE_KEEP_DAYS 天）..."
-        # 加入 --include 过滤，绝对防止误删用户网盘里的其他私人文件！
-        rclone delete "$RCLONE_REMOTE" --include "${PREFIX}_*.zip" --min-age "${RCLONE_KEEP_DAYS}d"
+        # 使用 filter 精确控制：只匹配备份文件前缀，排除其他文件
+        # 注意：rclone filter 规则按顺序执行，最后匹配的规则决定文件命运
+        rclone delete "$RCLONE_REMOTE" \
+            --filter "+ ${PREFIX}_*.zip" \
+            --filter "- *" \
+            --min-age "${RCLONE_KEEP_DAYS}d" \
+            --verbose 2>&1 | head -20
+        echo "远端清理完成。"
     fi
 else
     echo "未配置 RCLONE_REMOTE，跳过云端上传，备份仅保留在本地。"
 fi
 
-# 4. 清理临时文件
+# 5. 清理临时文件并自动清理过期备份
 echo "正在清理临时文件..."
 rm -f "$SQL_FILE" # 删除未加密的 SQL 文件
-# 如果上传成功，可以选择删除本地 ZIP 包，这里保留以防万一，或者根据策略清理旧备份
-# rm -f "$ZIP_FILE" 
 
-# 5. 自动清理过期备份
 echo "正在清理过期备份..."
-# 自动清理过期的本地备份文件，防止磁盘塞满
+# 使用 -delete 替代 -exec rm -f，性能更好
 KEEP_DAYS=${LOCAL_BACKUP_KEEP_DAYS:-15}
-find "$BACKUP_DIR" -name "${PREFIX}_*.zip" -mtime +$KEEP_DAYS -exec rm {} \;
+find "$BACKUP_DIR" -name "${PREFIX}_*.zip" -mtime +$KEEP_DAYS -delete 2>/dev/null || \
+    find "$BACKUP_DIR" -name "${PREFIX}_*.zip" -mtime +$KEEP_DAYS -exec rm -f {} \;
 echo "已清理 $KEEP_DAYS 天前的旧本地备份。"
 
 # 6. 发送成功通知
