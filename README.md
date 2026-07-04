@@ -1,4 +1,4 @@
-﻿# Vaultwarden Backup
+# Vaultwarden Backup
 
 [![GHCR](https://img.shields.io/badge/GitHub%20Container%20Registry-ghcr.io-blue?logo=github)](https://github.com/yingxiaomo/vaultwarden-backup/pkgs/container/vaultwarden-backup)
 [![Build](https://github.com/yingxiaomo/vaultwarden-backup/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/yingxiaomo/vaultwarden-backup/actions)
