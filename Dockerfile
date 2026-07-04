@@ -26,6 +26,7 @@ RUN apk add --no-cache \
 
 RUN mkdir -p /app /vw_data /config/rclone /backup
 
+# Web 面板文件
 COPY lib /app/lib
 COPY src /app/src
 COPY app_config /app/app_config
@@ -36,7 +37,12 @@ COPY templates /app/templates
 COPY static /app/static
 COPY config.yaml.example /app/config.yaml.example
 
-RUN chmod +x /app/lib/scripts/backup.sh /app/lib/scripts/entrypoint.sh
+# 备份脚本（来自 dev 分支的 bug 修复版本）
+COPY backup.sh /app/backup.sh
+COPY backup_en.sh /app/backup_en.sh
+COPY entrypoint.sh /app/entrypoint.sh
+
+RUN chmod +x /app/lib/scripts/backup.sh /app/lib/scripts/entrypoint.sh /app/backup.sh /app/backup_en.sh /app/entrypoint.sh
 
 WORKDIR /app
 

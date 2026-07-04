@@ -1,45 +1,56 @@
-# Python
+# --------------------------------------------
+# Vaultwarden Backup — .gitignore
+# --------------------------------------------
+
+# 临时文件
+*.tmp
+*.swp
+*.bak
+_fix_*
+fix_bugs*
+
+# Python 缓存
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .pytest_cache/
 
-# Environment files
+# 环境文件
 .env
 env.sh
 
-# IDE
+# 操作系统文件
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# IDE / 编辑器
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
+*.sublime-*
 
-# OS
-.DS_Store
-Thumbs.db
+# Docker 本地数据
+/vw_data/
 
-# Docker
-.dockerignore
+# 本地备份目录
+backups/
 
-# Logs
+# Rclone 本地配置副本
+rclone_config/
+
+# 日志
 logs/
 *.log
 
-# Backup files
-*.bak
-*.backup
-
-# Temporary files
-tmp/
-temp/
-
-# Build artifacts
+# 构建产物
 build/
 dist/
 *.egg-info/
 
-# Virtual environment
+# 虚拟环境
 venv/
 env/
+
+# Docker
+.dockerignore
