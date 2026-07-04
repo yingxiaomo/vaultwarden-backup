@@ -25,12 +25,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: 自动生成版本号
-        id: version
+      - name: 生成镜像标签
+        id: tag
         run: |
-          REV=$(git rev-list --count HEAD)
-          echo "version=${REV}" >> $GITHUB_OUTPUT
-          echo "Generated version: ${REV}"
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "tags=latest" >> $GITHUB_OUTPUT
+          else
+            SHORT_SHA=${GITHUB_SHA::7}
+            echo "tags=${{ github.ref_name }}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
@@ -45,19 +48,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
+      - name: Extract metadata for Docker
         id: meta
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable={{ is_default_branch }}
-            type=raw,value=${{ steps.version.outputs.version }}
-            type=raw,value={{date 'YYYYMMDD'}}
-            type=raw,value=dev,enable=${{ endsWith(github.ref, 'web-panel-dev') }}
-            type=sha,format=short
+            type=raw,value=${{ steps.tag.outputs.tags }}
           labels: |
-            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.version=${{ steps.tag.outputs.tags }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
@@ -65,8 +64,6 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
-          build-args: |
-            VERSION=${{ steps.version.outputs.version }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
