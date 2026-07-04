@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 
 if [ -n "$TZ" ] && [ -f "/usr/share/zoneinfo/$TZ" ]; then
     echo "Configuring timezone to $TZ..."

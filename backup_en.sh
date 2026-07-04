@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 
 # ==========================================
 # Vaultwarden Backup Script (Supports SQLite/MySQL/PostgreSQL + Apprise Notifications)

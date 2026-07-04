@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 
 # ==========================================
 # Vaultwarden 备份脚本 (支持 SQLite/MySQL/PostgreSQL + Apprise 通知)
