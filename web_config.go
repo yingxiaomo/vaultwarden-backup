@@ -45,32 +45,32 @@ type ConfigPageData struct {
 
 // ConfigFile ?? YAML ???????
 type ConfigFile struct {
-	WebUser  string `yaml:"WEB_USER"`
-	WebPass  string `yaml:"WEB_PASS"`
+	WebUser string `yaml:"WEB_USER"`
+	WebPass string `yaml:"WEB_PASS"`
 	// ???? - ?????????
-	DBType           string `yaml:"DB_TYPE"`
-	SQLiteDBFile     string `yaml:"SQLITE_DB_FILE"`
-	DBHost           string `yaml:"DB_HOST"`
-	DBPort           string `yaml:"DB_PORT"`
-	DBUser           string `yaml:"DB_USER"`
-	DBPassword       string `yaml:"DB_PASSWORD"`
-	DBName           string `yaml:"DB_NAME"`
-	BackupPrefix     string `yaml:"BACKUP_PREFIX"`
-	DataDir          string `yaml:"DATA_DIR"`
-	BackupDir        string `yaml:"BACKUP_DIR"`
-	ZipPassword      string `yaml:"ZIP_PASSWORD"`
-	CronSchedule     string `yaml:"CRON_SCHEDULE"`
-	RunOnStartup     string `yaml:"RUN_ON_STARTUP"`
-	LocalKeepDays    string `yaml:"LOCAL_BACKUP_KEEP_DAYS"`
-	RcloneRemote     string `yaml:"RCLONE_REMOTE"`
-	RcloneKeepDays   string `yaml:"RCLONE_KEEP_DAYS"`
-	AppriseURL       string `yaml:"APPRISE_URL"`
-	AppriseAPIURL    string `yaml:"APPRISE_API_URL"`
-	TZ               string `yaml:"TZ"`
-	HTTPProxy        string `yaml:"HTTP_PROXY"`
-	HTTPSProxy       string `yaml:"HTTPS_PROXY"`
-	StartupDelay     string `yaml:"STARTUP_DELAY"`
-	MinDiskSpaceMB   string `yaml:"MIN_DISK_SPACE_MB"`
+	DBType         string `yaml:"DB_TYPE"`
+	SQLiteDBFile   string `yaml:"SQLITE_DB_FILE"`
+	DBHost         string `yaml:"DB_HOST"`
+	DBPort         string `yaml:"DB_PORT"`
+	DBUser         string `yaml:"DB_USER"`
+	DBPassword     string `yaml:"DB_PASSWORD"`
+	DBName         string `yaml:"DB_NAME"`
+	BackupPrefix   string `yaml:"BACKUP_PREFIX"`
+	DataDir        string `yaml:"DATA_DIR"`
+	BackupDir      string `yaml:"BACKUP_DIR"`
+	ZipPassword    string `yaml:"ZIP_PASSWORD"`
+	CronSchedule   string `yaml:"CRON_SCHEDULE"`
+	RunOnStartup   string `yaml:"RUN_ON_STARTUP"`
+	LocalKeepDays  string `yaml:"LOCAL_BACKUP_KEEP_DAYS"`
+	RcloneRemote   string `yaml:"RCLONE_REMOTE"`
+	RcloneKeepDays string `yaml:"RCLONE_KEEP_DAYS"`
+	AppriseURL     string `yaml:"APPRISE_URL"`
+	AppriseAPIURL  string `yaml:"APPRISE_API_URL"`
+	TZ             string `yaml:"TZ"`
+	HTTPProxy      string `yaml:"HTTP_PROXY"`
+	HTTPSProxy     string `yaml:"HTTPS_PROXY"`
+	StartupDelay   string `yaml:"STARTUP_DELAY"`
+	MinDiskSpaceMB string `yaml:"MIN_DISK_SPACE_MB"`
 }
 
 // webConfigPath ? webLogPath ??????????
@@ -99,32 +99,33 @@ func getWebLogPath() string {
 // ============================================================
 
 var configFieldDefs = []ConfigField{
-	{Key: "DB_TYPE", Label: "?????", Type: "select",
+	{Key: "DB_TYPE", Label: "数据库类型", Type: "select",
 		Opts:    []Option{{Value: "sqlite", Label: "SQLite"}, {Value: "mysql", Label: "MySQL"}, {Value: "postgres", Label: "PostgreSQL"}},
-		Default: "sqlite", Desc: "Vaultwarden ????????"},
-	{Key: "SQLITE_DB_FILE", Label: "SQLite ???", Type: "text", Default: "db.sqlite3", Desc: "SQLite ??????"},
-	{Key: "DB_HOST", Label: "?????", Type: "text", Default: "db", Desc: "MySQL/PostgreSQL ????"},
-	{Key: "DB_PORT", Label: "?????", Type: "text", Default: "3306", Desc: "MySQL/PostgreSQL ??"},
-	{Key: "DB_USER", Label: "??????", Type: "text", Default: "", Desc: "MySQL/PostgreSQL ???"},
-	{Key: "DB_PASSWORD", Label: "?????", Type: "password", Default: "", Desc: "MySQL/PostgreSQL ??"},
-	{Key: "DB_NAME", Label: "?????", Type: "text", Default: "vaultwarden", Desc: "MySQL/PostgreSQL ????"},
-	{Key: "BACKUP_PREFIX", Label: "??????", Type: "text", Default: "vaultwarden_backup", Desc: "?? ZIP ?????"},
-	{Key: "DATA_DIR", Label: "????", Type: "text", Default: "/data", Desc: "Vaultwarden ??????"},
-	{Key: "BACKUP_DIR", Label: "????", Type: "text", Default: "/backup", Desc: "????????"},
-	{Key: "ZIP_PASSWORD", Label: "ZIP ????", Type: "password", Default: "", Desc: "??????"},
-	{Key: "CRON_SCHEDULE", Label: "???? (Cron)", Type: "text", Default: "0 2 * * *", Desc: "?? 0 2 * * * ????2?"},
-	{Key: "RUN_ON_STARTUP", Label: "???????", Type: "select",
-		Opts: []Option{{Value: "true", Label: "??"}, {Value: "false", Label: "??"}},
-		Default: "true", Desc: "?????????????"},
-	{Key: "STARTUP_DELAY", Label: "????(?)", Type: "number", Default: "15", Desc: "???????????????"},
-	{Key: "LOCAL_BACKUP_KEEP_DAYS", Label: "??????", Type: "number", Default: "15", Desc: "????????"},
-	{Key: "MIN_DISK_SPACE_MB", Label: "??????(MB)", Type: "number", Default: "5120", Desc: "???????????"},
-	{Key: "RCLONE_REMOTE", Label: "Rclone ????", Type: "text", Default: "", Desc: "?? my_onedrive:/vaultwarden_backup"},
-	{Key: "RCLONE_KEEP_DAYS", Label: "??????", Type: "number", Default: "", Desc: "??????????????"},
-	{Key: "APPRISE_URL", Label: "Apprise ?? URL", Type: "text", Default: "", Desc: "?? tgram://bottoken/ChatID"},
-	{Key: "APPRISE_API_URL", Label: "Apprise API ??", Type: "text", Default: "", Desc: "?? http://apprise:8000"},
-	{Key: "HTTP_PROXY", Label: "HTTP ??", Type: "text", Default: "", Desc: "?? http://192.168.1.100:7890"},
-	{Key: "HTTPS_PROXY", Label: "HTTPS ??", Type: "text", Default: "", Desc: "?? http://192.168.1.100:7890"},
+		Default: "sqlite", Desc: "Vaultwarden 使用的数据库类型"},
+	{Key: "SQLITE_DB_FILE", Label: "SQLite 文件名", Type: "text", Default: "db.sqlite3", Desc: "SQLite 数据库文件名"},
+	{Key: "DB_HOST", Label: "数据库主机", Type: "text", Default: "db", Desc: "MySQL/PostgreSQL 主机地址"},
+	{Key: "DB_PORT", Label: "数据库端口", Type: "text", Default: "3306", Desc: "MySQL/PostgreSQL 端口"},
+	{Key: "DB_USER", Label: "数据库用户名", Type: "text", Default: "", Desc: "MySQL/PostgreSQL 用户名"},
+	{Key: "DB_PASSWORD", Label: "数据库密码", Type: "password", Default: "", Desc: "MySQL/PostgreSQL 密码"},
+	{Key: "DB_NAME", Label: "数据库名称", Type: "text", Default: "vaultwarden", Desc: "MySQL/PostgreSQL 数据库名"},
+	{Key: "BACKUP_PREFIX", Label: "备份文件前缀", Type: "text", Default: "vaultwarden_backup", Desc: "备份 ZIP 文件名前缀"},
+	{Key: "DATA_DIR", Label: "数据目录", Type: "text", Default: "/data", Desc: "Vaultwarden 数据挂载路径"},
+	{Key: "BACKUP_DIR", Label: "备份目录", Type: "text", Default: "/backup", Desc: "备份文件存放路径"},
+	{Key: "ZIP_PASSWORD", Label: "ZIP 加密密码", Type: "password", Default: "", Desc: "留空则不加密"},
+	{Key: "CRON_SCHEDULE", Label: "定时任务 (Cron)", Type: "text", Default: "0 2 * * *", Desc: "例如 0 2 * * * 每天凌晨2点"},
+	{Key: "RUN_ON_STARTUP", Label: "启动时立即备份", Type: "select",
+		Opts:    []Option{{Value: "true", Label: "启用"}, {Value: "false", Label: "禁用"}},
+		Default: "true", Desc: "容器启动时立即执行一次备份"},
+	{Key: "STARTUP_DELAY", Label: "启动延迟(秒)", Type: "number", Default: "15", Desc: "启动后等待N秒再执行备份"},
+	{Key: "LOCAL_BACKUP_KEEP_DAYS", Label: "本地保留天数", Type: "number", Default: "15", Desc: "本地备份文件保留天数"},
+	{Key: "MIN_DISK_SPACE_MB", Label: "磁盘空间阈值(MB)", Type: "number", Default: "5120", Desc: "低于此值则跳过备份"},
+	{Key: "RCLONE_REMOTE", Label: "Rclone 远程路径", Type: "text", Default: "", Desc: "例如 my_onedrive:/vaultwarden_backup"},
+	{Key: "RCLONE_KEEP_DAYS", Label: "远端保留天数", Type: "number", Default: "", Desc: "远端备份保留天数，留空不清理"},
+	{Key: "TZ", Label: "时区", Type: "text", Default: "Asia/Shanghai", Desc: "容器时区设置"},
+	{Key: "APPRISE_URL", Label: "Apprise 通知 URL", Type: "text", Default: "", Desc: "例如 tgram://bottoken/ChatID"},
+	{Key: "APPRISE_API_URL", Label: "Apprise API 地址", Type: "text", Default: "", Desc: "例如 http://apprise:8000"},
+	{Key: "HTTP_PROXY", Label: "HTTP 代理", Type: "text", Default: "", Desc: "例如 http://192.168.1.100:7890"},
+	{Key: "HTTPS_PROXY", Label: "HTTPS 代理", Type: "text", Default: "", Desc: "例如 http://192.168.1.100:7890"},
 }
 
 // ============================================================
@@ -192,6 +193,7 @@ func syncConfigToEnv(cfg *ConfigFile) {
 	setEnv("APPRISE_URL", cfg.AppriseURL)
 	setEnv("APPRISE_API_URL", cfg.AppriseAPIURL)
 	setEnv("HTTP_PROXY", cfg.HTTPProxy)
+	setEnv("TZ", cfg.TZ)
 	setEnv("HTTPS_PROXY", cfg.HTTPSProxy)
 }
 
@@ -300,6 +302,8 @@ func setConfigValueByKey(cfg *ConfigFile, key, value string) {
 		cfg.AppriseAPIURL = value
 	case "HTTP_PROXY":
 		cfg.HTTPProxy = value
+	case "TZ":
+		cfg.TZ = value
 	case "HTTPS_PROXY":
 		cfg.HTTPSProxy = value
 	}
@@ -338,7 +342,7 @@ func buildConfigGroups(cfg *ConfigFile) []ConfigGroup {
 
 	dbKeys := map[string]bool{"DB_TYPE": true, "SQLITE_DB_FILE": true, "DB_HOST": true, "DB_PORT": true, "DB_USER": true, "DB_PASSWORD": true, "DB_NAME": true}
 	pathKeys := map[string]bool{"BACKUP_PREFIX": true, "DATA_DIR": true, "BACKUP_DIR": true, "ZIP_PASSWORD": true}
-	cronKeys := map[string]bool{"CRON_SCHEDULE": true, "RUN_ON_STARTUP": true, "STARTUP_DELAY": true, "LOCAL_BACKUP_KEEP_DAYS": true, "MIN_DISK_SPACE_MB": true}
+	cronKeys := map[string]bool{"CRON_SCHEDULE": true, "RUN_ON_STARTUP": true, "STARTUP_DELAY": true, "LOCAL_BACKUP_KEEP_DAYS": true, "MIN_DISK_SPACE_MB": true, "TZ": true}
 	cloudKeys := map[string]bool{"RCLONE_REMOTE": true, "RCLONE_KEEP_DAYS": true, "APPRISE_URL": true, "APPRISE_API_URL": true, "HTTP_PROXY": true, "HTTPS_PROXY": true}
 
 	for _, def := range configFieldDefs {
@@ -355,10 +359,10 @@ func buildConfigGroups(cfg *ConfigFile) []ConfigGroup {
 	}
 
 	return []ConfigGroup{
-		{GroupID: "database", GroupName: "?????", Icon: "bi-database", Fields: dbFields},
-		{GroupID: "path", GroupName: "?????", Icon: "bi-folder", Fields: pathFields},
-		{GroupID: "schedule", GroupName: "????", Icon: "bi-clock", Fields: cronFields},
-		{GroupID: "cloud", GroupName: "??????", Icon: "bi-cloud", Fields: cloudFields},
+		{GroupID: "database", GroupName: "数据库设置", Icon: "bi-database", Fields: dbFields},
+		{GroupID: "path", GroupName: "路径与加密", Icon: "bi-folder", Fields: pathFields},
+		{GroupID: "schedule", GroupName: "定时计划", Icon: "bi-clock", Fields: cronFields},
+		{GroupID: "cloud", GroupName: "云端与通知", Icon: "bi-cloud", Fields: cloudFields},
 	}
 }
 
@@ -395,4 +399,3 @@ func parseFormToConfig(form map[string]string) *ConfigFile {
 	}
 	return cfg
 }
-

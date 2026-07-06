@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vaultwarden ????</title>
+<title>Vaultwarden 备份管理</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 <style>
@@ -94,12 +94,12 @@ body{background:#f0f2f5;font-family:Segoe UI,system-ui,-apple-system,sans-serif}
 <body>
 <div class="container mt-4 mb-4">
   <div class="nav-header">
-    <h3><i class="bi bi-shield-check"></i> Vaultwarden ????</h3>
-    <a href="/logout" class="btn btn-outline-logout"><i class="bi bi-box-arrow-right"></i> ??</a>
+    <h3><i class="bi bi-shield-check"></i> Vaultwarden 备份管理</h3>
+    <a href="/logout" class="btn btn-outline-logout"><i class="bi bi-box-arrow-right"></i> 退出</a>
   </div>
   <nav class="nav-tabs-custom">
-    <a class="active" href="/"><i class="bi bi-speedometer2"></i> ???</a>
-    <a href="/config"><i class="bi bi-gear"></i> ??</a>
+    <a class="active" href="/"><i class="bi bi-speedometer2"></i> 仪表盘</a>
+    <a href="/config"><i class="bi bi-gear"></i> 配置</a>
   </nav>
   {{if .Msg}}
   <div class="alert alert-success alert-custom alert-dismissible fade show" role="alert">
@@ -110,20 +110,20 @@ body{background:#f0f2f5;font-family:Segoe UI,system-ui,-apple-system,sans-serif}
   <div class="row g-4 mb-4">
     <div class="col-md-4">
       <div class="card card-action-backup h-100">
-        <div class="card-header"><h5><i class="bi bi-cloud-upload"></i> ????</h5></div>
+        <div class="card-header"><h5><i class="bi bi-cloud-upload"></i> 手动备份</h5></div>
         <div class="card-body d-flex flex-column">
-          <p class="text-muted small mb-3">???????????????????????????????</p>
+          <p class="text-muted small mb-3">立即执行一次完整备份，包括数据库备份、压缩打包和云端同步</p>
           <form action="/do_backup" method="post" class="mt-auto">
-            <button type="submit" class="btn btn-backup w-100"><i class="bi bi-play-circle me-1"></i> ????</button>
+            <button type="submit" class="btn btn-backup w-100"><i class="bi bi-play-circle me-1"></i> 开始备份</button>
           </form>
         </div>
       </div>
     </div>
     <div class="col-md-4">
       <div class="card card-action-restore h-100">
-        <div class="card-header"><h5><i class="bi bi-arrow-counterclockwise"></i> ????</h5></div>
+        <div class="card-header"><h5><i class="bi bi-arrow-counterclockwise"></i> 一键恢复</h5></div>
         <div class="card-body d-flex flex-column">
-          <p class="text-muted small mb-3">???????????????"??"???????</p>
+          <p class="text-muted small mb-3">从以下备份列表中选择一个备份，点击"恢复"按钮即可</p>
           <div class="mt-auto text-center">
             <i class="bi bi-arrow-down-circle text-muted" style="font-size:24px;opacity:.4"></i>
           </div>
@@ -132,22 +132,22 @@ body{background:#f0f2f5;font-family:Segoe UI,system-ui,-apple-system,sans-serif}
     </div>
     <div class="col-md-4">
       <div class="card card-action-upload h-100">
-        <div class="card-header"><h5><i class="bi bi-upload"></i> ????</h5></div>
+        <div class="card-header"><h5><i class="bi bi-upload"></i> 上传恢复</h5></div>
         <div class="card-body d-flex flex-column">
-          <p class="text-muted small mb-3">????? .zip ??????????????????</p>
+          <p class="text-muted small mb-3">上传一个 .zip 备份文件进行恢复，适用于从其他设备迁移</p>
           <form action="/do_upload_restore" method="post" enctype="multipart/form-data" class="mt-auto"
-                onsubmit="return confirm('?????????????? Vaultwarden ????????')">
+                onsubmit="return confirm('恢复操作将覆盖当前 Vaultwarden 数据，确定继续？')">
             <div class="mb-3">
               <input type="file" class="form-control-file" name="file" accept=".zip" required>
             </div>
-            <button type="submit" class="btn" style="border-radius:10px;padding:12px 24px;font-weight:600;transition:all .2s;background:#06d6a0;border-color:#06d6a0;color:#fff;width:100%"><i class="bi bi-cloud-upload me-1"></i> ?????</button>
+            <button type="submit" class="btn" style="border-radius:10px;padding:12px 24px;font-weight:600;transition:all .2s;background:#06d6a0;border-color:#06d6a0;color:#fff;width:100%"><i class="bi bi-cloud-upload me-1"></i> 上传恢复</button>
           </form>
         </div>
       </div>
     </div>
   </div>
   <div class="card">
-    <div class="card-header"><h5><i class="bi bi-clock-history"></i> ????</h5></div>
+    <div class="card-header"><h5><i class="bi bi-clock-history"></i> 备份历史</h5></div>
     <div class="card-body">
       {{if .Backups}}
       <div class="history-stats">
@@ -155,27 +155,27 @@ body{background:#f0f2f5;font-family:Segoe UI,system-ui,-apple-system,sans-serif}
           <div class="history-stat-icon blue"><i class="bi bi-file-earmark-zip"></i></div>
           <div class="history-stat-text">
             <span class="num">{{len .Backups}}</span>
-            <span class="label">????</span>
+            <span class="label">备份总数</span>
           </div>
         </div>
         <div class="history-stat">
           <div class="history-stat-icon green"><i class="bi bi-database"></i></div>
           <div class="history-stat-text">
             <span class="num">{{(index .Backups 0).Size}}</span>
-            <span class="label">????</span>
+            <span class="label">最新大小</span>
           </div>
         </div>
         <div class="history-stat">
           <div class="history-stat-icon orange"><i class="bi bi-calendar"></i></div>
           <div class="history-stat-text">
             <span class="num">{{(index .Backups 0).MTime}}</span>
-            <span class="label">????</span>
+            <span class="label">最新备份</span>
           </div>
         </div>
       </div>
       <div class="table-responsive">
         <table class="table table-backup mb-0">
-          <thead><tr><th>???</th><th>??</th><th>????</th><th style="width:100px">??</th></tr></thead>
+          <thead><tr><th>文件名</th><th>大小</th><th>备份时间</th><th style="width:100px">操作</th></tr></thead>
           <tbody>
           {{range .Backups}}
           <tr>
@@ -184,9 +184,9 @@ body{background:#f0f2f5;font-family:Segoe UI,system-ui,-apple-system,sans-serif}
             <td class="file-time"><i class="bi bi-calendar3"></i>{{.MTime}}</td>
             <td>
               <form action="/do_restore" method="post" class="d-inline"
-                    onsubmit="return confirm('???? {{.Name}}???? Vaultwarden ????????')">
+                    onsubmit="return confirm('确认从 {{.Name}} 恢复？这将覆盖 Vaultwarden 当前数据')">
                 <input type="hidden" name="backup_file" value="{{.Name}}">
-                <button type="submit" class="btn-sm-restore"><i class="bi bi-arrow-counterclockwise me-1"></i>??</button>
+                <button type="submit" class="btn-sm-restore"><i class="bi bi-arrow-counterclockwise me-1"></i>恢复</button>
               </form>
             </td>
           </tr>
@@ -197,28 +197,28 @@ body{background:#f0f2f5;font-family:Segoe UI,system-ui,-apple-system,sans-serif}
       {{else}}
       <div class="empty-state">
         <i class="bi bi-inbox"></i>
-        <p>??????</p>
-        <small class="text-muted">???????????????????</small>
+        <p>暂无备份记录</p>
+        <small class="text-muted">点击上方"开始备份"按钮创建第一个备份</small>
       </div>
       {{end}}
     </div>
   </div>
   <div class="card">
-    <div class="card-header"><h5><i class="bi bi-terminal"></i> ????</h5></div>
+    <div class="card-header"><h5><i class="bi bi-terminal"></i> 运行日志</h5></div>
     <div class="card-body">
       <div class="log-toolbar">
         <div class="log-toolbar-left">
           <div class="log-status">
             <span class="dot"></span>
-            <span id="log-status-text">?????</span>
+            <span id="log-status-text">实时监控</span>
           </div>
           <span style="color:#adb5bd;font-size:12px" id="log-update-time"></span>
         </div>
         <div class="log-toolbar-right">
-          <button class="log-clear-btn" onclick="clearLogs()"><i class="bi bi-trash3 me-1"></i>??</button>
+          <button class="log-clear-btn" onclick="clearLogs()"><i class="bi bi-trash3 me-1"></i>清空</button>
         </div>
       </div>
-      <div class="log-box" id="log-scroll"><pre id="log-content">???...</pre></div>
+      <div class="log-box" id="log-scroll"><pre id="log-content">加载中...</pre></div>
     </div>
   </div>
 </div>
@@ -227,10 +227,10 @@ body{background:#f0f2f5;font-family:Segoe UI,system-ui,-apple-system,sans-serif}
 function formatLogLine(line) {
   let levelClass = '';
   let content = line;
-  if (/error|??|fatal|exception|traceback/i.test(line)) { levelClass = 'level-error'; }
+  if (/error|失败|fatal|exception|traceback/i.test(line)) { levelClass = 'level-error'; }
   else if (/warn|deprecated/i.test(line)) { levelClass = 'level-warn'; }
-  else if (/success|??|??|ok|done/i.test(line)) { levelClass = 'level-ok'; }
-  else if (/info|??/i.test(line)) { levelClass = 'level-info'; }
+  else if (/success|成功|✅|ok|done/i.test(line)) { levelClass = 'level-ok'; }
+  else if (/info|信息/i.test(line)) { levelClass = 'level-info'; }
   if (levelClass) {
     const tsMatch = line.match(/^(\d{4}[-/]\d{2}[-/]\d{2}[T ]\d{2}:\d{2}:\d{2})/);
     if (tsMatch) {
@@ -248,7 +248,7 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 function formatLogContent(text) {
-  if (!text) return '<span style="color:#8b949e">????</span>';
+  if (!text) return '<span style="color:#8b949e">暂无日志</span>';
   const lines = text.split('\n');
   return lines.map(function(line) {
     return '<div class="log-line">' + formatLogLine(line) + '</div>';
@@ -262,20 +262,20 @@ function loadLogs(){
       if (d.logs) {
         el.innerHTML = formatLogContent(d.logs);
       } else {
-        el.innerHTML = '<div class="log-line"><span style="color:#8b949e">????</span></div>';
+        el.innerHTML = '<div class="log-line"><span style="color:#8b949e">暂无日志</span></div>';
       }
       const scroll = document.getElementById('log-scroll');
       scroll.scrollTop = scroll.scrollHeight;
-      document.getElementById('log-status-text').textContent = '?????';
+      document.getElementById('log-status-text').textContent = '实时监控';
       document.getElementById('log-update-time').textContent = new Date().toLocaleTimeString();
     })
     .catch(function(e) {
-      document.getElementById('log-content').innerHTML = '<div class="log-line"><span class="level level-error">??????: ' + e + '</span></div>';
-      document.getElementById('log-status-text').textContent = '????';
+      document.getElementById('log-content').innerHTML = '<div class="log-line"><span class="level level-error">加载失败: ' + e + '</span></div>';
+      document.getElementById('log-status-text').textContent = '异常';
     });
 }
 function clearLogs() {
-  document.getElementById('log-content').innerHTML = '<div class="log-line"><span style="color:#8b949e">?????</span></div>';
+  document.getElementById('log-content').innerHTML = '<div class="log-line"><span style="color:#8b949e">已清空</span></div>';
 }
 loadLogs();
 setInterval(loadLogs, 5000);

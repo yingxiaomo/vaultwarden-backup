@@ -1,4 +1,4 @@
-﻿package main
+package main
 
 import (
 	"archive/zip"
@@ -126,6 +126,7 @@ func getEnvInt(key string, def int) int {
 	}
 	return def
 }
+
 // ============================================================
 // Rclone SDK 初始化
 // ============================================================
@@ -139,7 +140,6 @@ func ensureRcloneConfig() {
 	})
 }
 
-
 // ============================================================
 // 多语言
 // ============================================================
@@ -151,135 +151,135 @@ var enUS = LangMap{}
 
 func init() {
 	zhCN = LangMap{
-		"startup":            "Vaultwarden 备份容器已启动",
-		"cfg_db_type":        "数据库类型",
-		"cfg_backup_dir":     "备份目录",
-		"cfg_prefix":         "文件前缀",
-		"cfg_keep_local":     "本地保留天数",
-		"cfg_keep_remote":    "远端保留天数",
-		"cfg_min_space":      "磁盘空间阈值",
-		"cfg_rclone":         "远端同步",
-		"cfg_apprise":        "通知方式",
-		"cfg_apprise_url":    "Apprise 直连",
-		"cfg_apprise_api":    "Apprise API",
-		"cfg_proxy":          "代理",
-		"cfg_no_proxy":       "无",
-		"disk_check":         "检查磁盘空间",
-		"disk_check_fail":    "无法获取磁盘空间信息，跳过检查",
-		"disk_warn":          "磁盘空间不足！剩余 %s，低于阈值 %d MB",
-		"disk_ok":            "磁盘空间充足",
-		"db_backup":          "备份数据库（类型: %s）",
-		"db_missing_tool":    "找不到 %s 命令，请检查安装",
-		"db_sqlite_notfound": "找不到 SQLite 数据库文件 %s",
-		"db_missing_mysql":   "MySQL 备份需要设置 DB_USER、DB_PASSWORD 和 DB_NAME",
-		"db_missing_pg":      "PostgreSQL 备份需要设置 DB_USER、DB_PASSWORD 和 DB_NAME",
-		"db_unsupported":     "不支持的数据库类型: %s",
-		"db_ok":              "数据库备份成功",
-		"db_fail":            "数据库备份失败！请检查数据库连接和权限",
-		"staging":            "组装数据文件",
-		"staging_copy":       "复制数据目录内容",
-		"staging_clean":      "清理数据目录中的 SQLite 文件",
-		"zip_start":          "打包中",
-		"zip_unencrypted":    "非加密打包",
-		"zip_encrypted":      "AES-256 加密打包",
-		"zip_fail":           "打包失败",
-		"zip_verify":         "校验压缩包完整性",
-		"zip_verify_ok":      "完整性校验通过",
-		"zip_verify_fail":    "压缩包损坏",
-		"zip_size":           "压缩包大小",
-		"rclone_check":       "检查 Rclone 远端配置",
-		"rclone_check_ok":    "远端配置检查通过",
-		"rclone_notfound":    "找不到 Rclone 远端配置: %s",
-		"rclone_upload":      "上传到 %s",
-		"rclone_retry":       "上传失败，%d 秒后重试（第 %d/%d 次）",
-		"rclone_upload_ok":   "上传成功",
-		"rclone_upload_fail": "上传失败（已重试 %d 次）",
-		"rclone_cleanup":     "清理远端过期备份（保留 %d 天）",
+		"startup":             "Vaultwarden 备份容器已启动",
+		"cfg_db_type":         "数据库类型",
+		"cfg_backup_dir":      "备份目录",
+		"cfg_prefix":          "文件前缀",
+		"cfg_keep_local":      "本地保留天数",
+		"cfg_keep_remote":     "远端保留天数",
+		"cfg_min_space":       "磁盘空间阈值",
+		"cfg_rclone":          "远端同步",
+		"cfg_apprise":         "通知方式",
+		"cfg_apprise_url":     "Apprise 直连",
+		"cfg_apprise_api":     "Apprise API",
+		"cfg_proxy":           "代理",
+		"cfg_no_proxy":        "无",
+		"disk_check":          "检查磁盘空间",
+		"disk_check_fail":     "无法获取磁盘空间信息，跳过检查",
+		"disk_warn":           "磁盘空间不足！剩余 %s，低于阈值 %d MB",
+		"disk_ok":             "磁盘空间充足",
+		"db_backup":           "备份数据库（类型: %s）",
+		"db_missing_tool":     "找不到 %s 命令，请检查安装",
+		"db_sqlite_notfound":  "找不到 SQLite 数据库文件 %s",
+		"db_missing_mysql":    "MySQL 备份需要设置 DB_USER、DB_PASSWORD 和 DB_NAME",
+		"db_missing_pg":       "PostgreSQL 备份需要设置 DB_USER、DB_PASSWORD 和 DB_NAME",
+		"db_unsupported":      "不支持的数据库类型: %s",
+		"db_ok":               "数据库备份成功",
+		"db_fail":             "数据库备份失败！请检查数据库连接和权限",
+		"staging":             "组装数据文件",
+		"staging_copy":        "复制数据目录内容",
+		"staging_clean":       "清理数据目录中的 SQLite 文件",
+		"zip_start":           "打包中",
+		"zip_unencrypted":     "非加密打包",
+		"zip_encrypted":       "AES-256 加密打包",
+		"zip_fail":            "打包失败",
+		"zip_verify":          "校验压缩包完整性",
+		"zip_verify_ok":       "完整性校验通过",
+		"zip_verify_fail":     "压缩包损坏",
+		"zip_size":            "压缩包大小",
+		"rclone_check":        "检查 Rclone 远端配置",
+		"rclone_check_ok":     "远端配置检查通过",
+		"rclone_notfound":     "找不到 Rclone 远端配置: %s",
+		"rclone_upload":       "上传到 %s",
+		"rclone_retry":        "上传失败，%d 秒后重试（第 %d/%d 次）",
+		"rclone_upload_ok":    "上传成功",
+		"rclone_upload_fail":  "上传失败（已重试 %d 次）",
+		"rclone_cleanup":      "清理远端过期备份（保留 %d 天）",
 		"rclone_cleanup_done": "远端清理完成",
-		"rclone_skip":        "未配置 RCLONE_REMOTE，跳过云端上传",
-		"local_cleanup":      "清理本地过期备份（保留 %d 天）",
-		"local_cleanup_done": "本地清理完成",
-		"cleanup_temp":       "清理临时文件",
-		"notify_send":        "发送通知",
-		"notify_apprise_api": "通过 Apprise API 发送",
-		"notify_telegram":    "通过 Telegram 发送",
-		"notify_webhook":     "通过 Webhook 发送",
-		"notify_skip":        "未配置通知方式，跳过",
-		"notify_fail":        "通知发送失败: %v",
-		"success_title":      "Vaultwarden 备份成功",
-		"success_body":       "类型: %s\n大小: %s\n文件: %s.zip",
-		"fail_title":         "Vaultwarden 备份失败",
-		"warn_title":         "Vaultwarden 备份警告",
-		"warn_body":          "磁盘空间不足！剩余 %s，低于阈值 %d MB",
-		"footer":             "备份完成",
-		"err_create_dir":     "创建目录失败",
-		"err_no_write_perm":  "备份目录没有写入权限",
+		"rclone_skip":         "未配置 RCLONE_REMOTE，跳过云端上传",
+		"local_cleanup":       "清理本地过期备份（保留 %d 天）",
+		"local_cleanup_done":  "本地清理完成",
+		"cleanup_temp":        "清理临时文件",
+		"notify_send":         "发送通知",
+		"notify_apprise_api":  "通过 Apprise API 发送",
+		"notify_telegram":     "通过 Telegram 发送",
+		"notify_webhook":      "通过 Webhook 发送",
+		"notify_skip":         "未配置通知方式，跳过",
+		"notify_fail":         "通知发送失败: %v",
+		"success_title":       "Vaultwarden 备份成功",
+		"success_body":        "类型: %s\n大小: %s\n文件: %s.zip",
+		"fail_title":          "Vaultwarden 备份失败",
+		"warn_title":          "Vaultwarden 备份警告",
+		"warn_body":           "磁盘空间不足！剩余 %s，低于阈值 %d MB",
+		"footer":              "备份完成",
+		"err_create_dir":      "创建目录失败",
+		"err_no_write_perm":   "备份目录没有写入权限",
 	}
 
 	enUS = LangMap{
-		"startup":            "Vaultwarden Backup Container Started",
-		"cfg_db_type":        "Database Type",
-		"cfg_backup_dir":     "Backup Directory",
-		"cfg_prefix":         "File Prefix",
-		"cfg_keep_local":     "Local Retention (days)",
-		"cfg_keep_remote":    "Remote Retention (days)",
-		"cfg_min_space":      "Disk Space Threshold",
-		"cfg_rclone":         "Remote Sync",
-		"cfg_apprise":        "Notification",
-		"cfg_apprise_url":    "Apprise Direct",
-		"cfg_apprise_api":    "Apprise API",
-		"cfg_proxy":          "Proxy",
-		"cfg_no_proxy":       "None",
-		"disk_check":         "Checking disk space",
-		"disk_check_fail":    "Cannot determine disk space, skipping check",
-		"disk_warn":          "Insufficient disk space! Available: %s, threshold: %d MB",
-		"disk_ok":            "Disk space OK",
-		"db_backup":          "Backing up database (type: %s)",
-		"db_missing_tool":    "%s command not found, please check installation",
-		"db_sqlite_notfound": "SQLite database file %s not found",
-		"db_missing_mysql":   "MySQL backup requires DB_USER, DB_PASSWORD and DB_NAME",
-		"db_missing_pg":      "PostgreSQL backup requires DB_USER, DB_PASSWORD and DB_NAME",
-		"db_unsupported":     "Unsupported database type: %s",
-		"db_ok":              "Database backup successful",
-		"db_fail":            "Database backup failed! Please check connection and permissions",
-		"staging":            "Assembling data files",
-		"staging_copy":       "Copying data directory contents",
-		"staging_clean":      "Cleaning SQLite files from data directory",
-		"zip_start":          "Packaging",
-		"zip_unencrypted":    "Unencrypted packaging",
-		"zip_encrypted":      "AES-256 encrypted packaging",
-		"zip_fail":           "Packaging failed",
-		"zip_verify":         "Verifying zip integrity",
-		"zip_verify_ok":      "Integrity check passed",
-		"zip_verify_fail":    "Zip file corrupted",
-		"zip_size":           "Backup size",
-		"rclone_check":       "Checking Rclone remote configuration",
-		"rclone_check_ok":    "Remote configuration OK",
-		"rclone_notfound":    "Rclone remote not found: %s",
-		"rclone_upload":      "Uploading to %s",
-		"rclone_retry":       "Upload failed, retrying in %ds (attempt %d/%d)",
-		"rclone_upload_ok":   "Upload successful",
-		"rclone_upload_fail": "Upload failed (retried %d times)",
-		"rclone_cleanup":     "Cleaning up remote expired backups (keeping %d days)",
+		"startup":             "Vaultwarden Backup Container Started",
+		"cfg_db_type":         "Database Type",
+		"cfg_backup_dir":      "Backup Directory",
+		"cfg_prefix":          "File Prefix",
+		"cfg_keep_local":      "Local Retention (days)",
+		"cfg_keep_remote":     "Remote Retention (days)",
+		"cfg_min_space":       "Disk Space Threshold",
+		"cfg_rclone":          "Remote Sync",
+		"cfg_apprise":         "Notification",
+		"cfg_apprise_url":     "Apprise Direct",
+		"cfg_apprise_api":     "Apprise API",
+		"cfg_proxy":           "Proxy",
+		"cfg_no_proxy":        "None",
+		"disk_check":          "Checking disk space",
+		"disk_check_fail":     "Cannot determine disk space, skipping check",
+		"disk_warn":           "Insufficient disk space! Available: %s, threshold: %d MB",
+		"disk_ok":             "Disk space OK",
+		"db_backup":           "Backing up database (type: %s)",
+		"db_missing_tool":     "%s command not found, please check installation",
+		"db_sqlite_notfound":  "SQLite database file %s not found",
+		"db_missing_mysql":    "MySQL backup requires DB_USER, DB_PASSWORD and DB_NAME",
+		"db_missing_pg":       "PostgreSQL backup requires DB_USER, DB_PASSWORD and DB_NAME",
+		"db_unsupported":      "Unsupported database type: %s",
+		"db_ok":               "Database backup successful",
+		"db_fail":             "Database backup failed! Please check connection and permissions",
+		"staging":             "Assembling data files",
+		"staging_copy":        "Copying data directory contents",
+		"staging_clean":       "Cleaning SQLite files from data directory",
+		"zip_start":           "Packaging",
+		"zip_unencrypted":     "Unencrypted packaging",
+		"zip_encrypted":       "AES-256 encrypted packaging",
+		"zip_fail":            "Packaging failed",
+		"zip_verify":          "Verifying zip integrity",
+		"zip_verify_ok":       "Integrity check passed",
+		"zip_verify_fail":     "Zip file corrupted",
+		"zip_size":            "Backup size",
+		"rclone_check":        "Checking Rclone remote configuration",
+		"rclone_check_ok":     "Remote configuration OK",
+		"rclone_notfound":     "Rclone remote not found: %s",
+		"rclone_upload":       "Uploading to %s",
+		"rclone_retry":        "Upload failed, retrying in %ds (attempt %d/%d)",
+		"rclone_upload_ok":    "Upload successful",
+		"rclone_upload_fail":  "Upload failed (retried %d times)",
+		"rclone_cleanup":      "Cleaning up remote expired backups (keeping %d days)",
 		"rclone_cleanup_done": "Remote cleanup completed",
-		"rclone_skip":        "RCLONE_REMOTE not configured, skipping cloud upload",
-		"local_cleanup":      "Cleaning up local expired backups (keeping %d days)",
-		"local_cleanup_done": "Local cleanup completed",
-		"cleanup_temp":       "Cleaning up temporary files",
-		"notify_send":        "Sending notification",
-		"notify_apprise_api": "Via Apprise API",
-		"notify_telegram":    "Via Telegram",
-		"notify_webhook":     "Via Webhook",
-		"notify_skip":        "No notification service configured, skipping",
-		"notify_fail":        "Notification failed: %v",
-		"success_title":      "Vaultwarden Backup Successful",
-		"success_body":       "Type: %s\nSize: %s\nFile: %s.zip",
-		"fail_title":         "Vaultwarden Backup Failed",
-		"warn_title":         "Vaultwarden Backup Warning",
-		"warn_body":          "Insufficient disk space! Available: %s, threshold: %d MB",
-		"footer":             "Backup completed",
-		"err_create_dir":     "Failed to create directory",
-		"err_no_write_perm":  "Backup directory is not writable",
+		"rclone_skip":         "RCLONE_REMOTE not configured, skipping cloud upload",
+		"local_cleanup":       "Cleaning up local expired backups (keeping %d days)",
+		"local_cleanup_done":  "Local cleanup completed",
+		"cleanup_temp":        "Cleaning up temporary files",
+		"notify_send":         "Sending notification",
+		"notify_apprise_api":  "Via Apprise API",
+		"notify_telegram":     "Via Telegram",
+		"notify_webhook":      "Via Webhook",
+		"notify_skip":         "No notification service configured, skipping",
+		"notify_fail":         "Notification failed: %v",
+		"success_title":       "Vaultwarden Backup Successful",
+		"success_body":        "Type: %s\nSize: %s\nFile: %s.zip",
+		"fail_title":          "Vaultwarden Backup Failed",
+		"warn_title":          "Vaultwarden Backup Warning",
+		"warn_body":           "Insufficient disk space! Available: %s, threshold: %d MB",
+		"footer":              "Backup completed",
+		"err_create_dir":      "Failed to create directory",
+		"err_no_write_perm":   "Backup directory is not writable",
 	}
 }
 
@@ -303,7 +303,16 @@ func T(lang, key string, args ...interface{}) string {
 func logf(cfg Config, format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	t := time.Now().Format("2006-01-02 15:04:05")
-	fmt.Printf("[%s] %s\n", t, msg)
+	line := fmt.Sprintf("[%s] %s", t, msg)
+	fmt.Println(line)
+
+	// 同时写入 Web 面板日志（如果已初始化）
+	if logPath := getWebLogPath(); logPath != "" {
+		if f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
+			_, _ = f.WriteString(line + "\n")
+			f.Close()
+		}
+	}
 }
 
 // ============================================================
@@ -412,7 +421,7 @@ func backupMySQL(cfg Config, output string) error {
 		return fmt.Errorf(T(cfg.Lang, "db_missing_tool"), "mysqldump")
 	}
 	if cfg.DBUser == "" || cfg.DBPassword == "" || cfg.DBName == "" {
-		return fmt.Errorf(T(cfg.Lang, "db_missing_mysql"))
+		return fmt.Errorf("%s", T(cfg.Lang, "db_missing_mysql"))
 	}
 	args := []string{
 		"--single-transaction", "--quick", "--opt",
@@ -434,7 +443,7 @@ func backupPostgres(cfg Config, output string) error {
 		return fmt.Errorf(T(cfg.Lang, "db_missing_tool"), "pg_dump")
 	}
 	if cfg.DBUser == "" || cfg.DBPassword == "" || cfg.DBName == "" {
-		return fmt.Errorf(T(cfg.Lang, "db_missing_pg"))
+		return fmt.Errorf("%s", T(cfg.Lang, "db_missing_pg"))
 	}
 	args := []string{
 		"--no-owner", "--no-privileges", "--clean",
