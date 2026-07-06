@@ -1,7 +1,9 @@
 ﻿package main
 
 import (
+	"archive/zip"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,7 +15,13 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	_ "github.com/rclone/rclone/backend/all"
+	"github.com/rclone/rclone/fs"
+	"github.com/rclone/rclone/fs/config/configfile"
+	"github.com/rclone/rclone/fs/operations"
 )
 
 type Config struct {
@@ -39,6 +47,7 @@ type Config struct {
 	HTTPSProxy     string
 	CronSchedule   string
 	RunOnStartup   bool
+	StartupDelay   int
 }
 
 func loadConfig() Config {
@@ -66,6 +75,7 @@ func loadConfig() Config {
 	c.MinDiskSpaceMB = getEnvInt("MIN_DISK_SPACE_MB", 5120)
 	c.LocalKeepDays = getEnvInt("LOCAL_BACKUP_KEEP_DAYS", 15)
 	c.RcloneKeepDays = getEnvInt("RCLONE_KEEP_DAYS", 0)
+	c.StartupDelay = getEnvInt("STARTUP_DELAY", 15)
 	if c.DBPort == "" {
 		switch c.DBType {
 		case "mysql":
@@ -92,6 +102,19 @@ func getEnvInt(key string, def int) int {
 	}
 	return def
 }
+// ============================================================
+// Rclone SDK 初始化
+// ============================================================
+
+var rcloneOnce sync.Once
+
+// ensureRcloneConfig 确保 rclone 配置已加载，只执行一次
+func ensureRcloneConfig() {
+	rcloneOnce.Do(func() {
+		configfile.Install()
+	})
+}
+
 
 // ============================================================
 // 多语言
@@ -472,31 +495,101 @@ func removeSQLiteFiles(dir string) {
 // ============================================================
 
 func createZip(sourceDir, targetFile, password string) error {
-	args := []string{"-r", "-q"}
+	// 有密码时回退到系统 zip 命令（支持 AES-256 加密）
 	if password != "" {
-		args = append(args, "-P", password)
+		args := []string{"-r", "-q", "-P", password, targetFile, ".", "-x", ".*"}
+		cmd := exec.Command("zip", args...)
+		cmd.Dir = sourceDir
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("zip: %w\n%s", err, stderr.String())
+		}
+		return nil
 	}
-	args = append(args, targetFile, ".")
-	args = append(args, "-x", ".*")
 
-	cmd := exec.Command("zip", args...)
-	cmd.Dir = sourceDir
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("zip: %w\n%s", err, stderr.String())
+	// 无密码时使用 Go 原生 archive/zip，避免外部依赖
+	outFile, err := os.Create(targetFile)
+	if err != nil {
+		return fmt.Errorf("创建压缩包失败: %w", err)
 	}
-	return nil
+	defer outFile.Close()
+
+	zw := zip.NewWriter(outFile)
+	defer zw.Close()
+
+	// 遍历源目录并添加文件
+	baseDir := sourceDir
+	err = filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		// 跳过根目录自身
+		if path == sourceDir {
+			return nil
+		}
+		// 跳过隐藏文件（以 . 开头）
+		if strings.HasPrefix(info.Name(), ".") {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		relPath, _ := filepath.Rel(baseDir, path)
+		relPath = filepath.ToSlash(relPath)
+
+		if info.IsDir() {
+			// 写入目录条目（以 / 结尾）
+			_, err := zw.Create(relPath + "/")
+			return err
+		}
+
+		// 写入文件
+		w, err := zw.Create(relPath)
+		if err != nil {
+			return err
+		}
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		_, err = io.Copy(w, f)
+		return err
+	})
+	return err
 }
 
 func verifyZip(zipFile, password string) error {
-	args := []string{"-t", "-q"}
+	// 有密码时回退到系统 unzip 命令校验
 	if password != "" {
-		args = append(args, "-P", password)
+		args := []string{"-t", "-q", "-P", password, zipFile}
+		_, err := runCmd("unzip", args...)
+		return err
 	}
-	args = append(args, zipFile)
-	_, err := runCmd("unzip", args...)
-	return err
+
+	// 无密码时使用 Go 原生 archive/zip 校验完整性
+	r, err := zip.OpenReader(zipFile)
+	if err != nil {
+		return fmt.Errorf("打开压缩包失败: %w", err)
+	}
+	defer r.Close()
+
+	for _, f := range r.File {
+		// 读取文件内容以触发 CRC32 校验
+		rc, err := f.Open()
+		if err != nil {
+			return fmt.Errorf("压缩包中文件 %s 损坏: %w", f.Name, err)
+		}
+		// 读取所有内容以确保 CRC 校验通过
+		_, err = io.Copy(io.Discard, rc)
+		rc.Close()
+		if err != nil {
+			return fmt.Errorf("压缩包中文件 %s 读取失败: %w", f.Name, err)
+		}
+	}
+	return nil
 }
 
 // ============================================================
@@ -511,25 +604,43 @@ func extractRemoteName(remote string) string {
 	return remote[:idx]
 }
 
+// checkRcloneRemote ?? rclone Go SDK ??????????
 func checkRcloneRemote(remote string) (bool, error) {
-	out, err := runCmd("rclone", "listremotes")
+	ensureRcloneConfig()
+	ctx := context.Background()
+	remoteName := extractRemoteName(remote)
+
+	// ??????????????????
+	_, err := fs.NewFs(ctx, remoteName+":")
 	if err != nil {
-		return false, err
+		return false, nil
 	}
-	remoteName := extractRemoteName(remote) + ":"
-	for _, line := range strings.Split(out, "\n") {
-		if strings.TrimSpace(line) == remoteName {
-			return true, nil
-		}
-	}
-	return false, nil
+	return true, nil
 }
 
+// uploadWithRetry ?? rclone Go SDK ????????
 func uploadWithRetry(cfg Config, zipFile, remote string) error {
+	ensureRcloneConfig()
+	ctx := context.Background()
+
+	// ???????
+	srcFs, err := fs.NewFs(ctx, filepath.Dir(zipFile))
+	if err != nil {
+		return fmt.Errorf("?????????: %w", err)
+	}
+
+	// ????????
+	dstFs, err := fs.NewFs(ctx, remote)
+	if err != nil {
+		return fmt.Errorf("??????????: %w", err)
+	}
+
+	srcFileName := filepath.Base(zipFile)
 	maxRetries := 3
 	delay := 5
+
 	for i := 1; i <= maxRetries; i++ {
-		_, err := runCmd("rclone", "copy", zipFile, remote)
+		err = operations.CopyFile(ctx, dstFs, srcFs, srcFileName, srcFileName)
 		if err == nil {
 			return nil
 		}
@@ -538,19 +649,40 @@ func uploadWithRetry(cfg Config, zipFile, remote string) error {
 			time.Sleep(time.Duration(delay) * time.Second)
 			delay *= 2
 		} else {
-			return err
+			return fmt.Errorf("???????? %d ??: %w", maxRetries, err)
 		}
 	}
-	return fmt.Errorf("upload failed after %d retries", maxRetries)
+	return fmt.Errorf("???????? %d ??", maxRetries)
 }
 
+// cleanupRemote ?? rclone Go SDK ????????
 func cleanupRemote(remote, prefix string, keepDays int) error {
-	_, err := runCmd("rclone", "delete", remote,
-		"--filter", fmt.Sprintf("+ %s_*.zip", prefix),
-		"--filter", "- *",
-		"--min-age", fmt.Sprintf("%dd", keepDays),
-	)
-	return err
+	ensureRcloneConfig()
+	ctx := context.Background()
+
+	dstFs, err := fs.NewFs(ctx, remote)
+	if err != nil {
+		return fmt.Errorf("create remote fs failed: %w", err)
+	}
+
+	cutoff := time.Now().AddDate(0, 0, -keepDays)
+	var lastErr error
+
+	err = operations.ListFn(ctx, dstFs, func(obj fs.Object) {
+		name := obj.Remote()
+		if !strings.HasPrefix(name, prefix+"_") || !strings.HasSuffix(name, ".zip") {
+			return
+		}
+		if obj.ModTime(ctx).Before(cutoff) {
+			if e := operations.DeleteFile(ctx, obj); e != nil {
+				lastErr = e
+			}
+		}
+	})
+	if err != nil {
+		return fmt.Errorf("list remote files failed: %w", err)
+	}
+	return lastErr
 }
 
 func cleanupLocal(backupDir, prefix string, keepDays int) error {
@@ -1022,6 +1154,8 @@ func startScheduler() {
 	log.Printf("启动时备份: %v", cfg.RunOnStartup)
 
 	if cfg.RunOnStartup {
+		log.Printf("等待 %d 秒后执行启动时备份（数据库启动需要时间）...", cfg.StartupDelay)
+		time.Sleep(time.Duration(cfg.StartupDelay) * time.Second)
 		log.Println("执行启动时备份...")
 		cfg := loadConfig()
 		runBackup(cfg)

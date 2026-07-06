@@ -1,4 +1,4 @@
-﻿services:
+services:
   vaultwarden-backup:
     image: ghcr.io/yingxiaomo/vaultwarden-backup:latest
     container_name: vaultwarden_backup
@@ -31,6 +31,9 @@
       - CRON_SCHEDULE=0 2 * * *
       # 启动时立即执行一次备份（默认 true）
       - RUN_ON_STARTUP=true
+      # 启动时备份延迟（秒，默认 15 秒，给数据库足够的启动时间）
+      - STARTUP_DELAY=15
+
       # 本地备份保留天数（默认 15 天）
       - LOCAL_BACKUP_KEEP_DAYS=15
       # 备份文件前缀（默认 vaultwarden_backup）

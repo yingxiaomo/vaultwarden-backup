@@ -48,6 +48,9 @@ services:
 
       - RUN_ON_STARTUP=true
 
+      # Startup backup delay in seconds (default 15s, gives database time to start)
+      - STARTUP_DELAY=15
+
       - LOCAL_BACKUP_KEEP_DAYS=15
 
       # - BACKUP_PREFIX=vaultwarden_backup
