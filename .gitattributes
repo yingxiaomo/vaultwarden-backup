@@ -1,4 +1,4 @@
-﻿# 强制使用 LF 换行符（容器内 Linux 需要）
+# 强制使用 LF 换行符（容器内 Linux 需要）
 * text=auto eol=lf
 
 # Shell 脚本确保 LF
