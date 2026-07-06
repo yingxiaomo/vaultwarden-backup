@@ -1,4 +1,4 @@
-﻿# Vaultwarden Backup
+# Vaultwarden Backup
 
 [![GHCR](https://img.shields.io/badge/GitHub%20Container%20Registry-ghcr.io-blue?logo=github)](https://github.com/yingxiaomo/vaultwarden-backup/pkgs/container/vaultwarden-backup)
 [![Build](https://github.com/yingxiaomo/vaultwarden-backup/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/yingxiaomo/vaultwarden-backup/actions)
@@ -9,7 +9,7 @@
 - [中文文档](README.md)
 - [English Documentation](README.en.md)
 
-There are many existing backup projects out there, but they are often overly complex. I needed a simple backup solution for Vaultwarden, so I created this. It supports SQLite, MySQL, and PostgreSQL databases, and integrates Apprise notification and Rclone cloud synchronization features.
+There are many existing backup projects out there, but they are often overly complex. I needed a simple backup solution for Vaultwarden, so I created this. It supports SQLite, MySQL, and PostgreSQL databases, and integrates Apprise notification and Rclone cloud synchronization features. An optional Web management panel is also available.
 
 ## ✨ Core Features
 
