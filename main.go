@@ -18,7 +18,31 @@ import (
 	"sync"
 	"time"
 
-	_ "github.com/rclone/rclone/backend/all"
+	_ "github.com/rclone/rclone/backend/alias"
+	_ "github.com/rclone/rclone/backend/azureblob"
+	_ "github.com/rclone/rclone/backend/b2"
+	_ "github.com/rclone/rclone/backend/box"
+	_ "github.com/rclone/rclone/backend/crypt"
+	_ "github.com/rclone/rclone/backend/drive"
+	_ "github.com/rclone/rclone/backend/dropbox"
+	_ "github.com/rclone/rclone/backend/filefabric"
+	_ "github.com/rclone/rclone/backend/ftp"
+	_ "github.com/rclone/rclone/backend/googlecloudstorage"
+	_ "github.com/rclone/rclone/backend/googlephotos"
+	_ "github.com/rclone/rclone/backend/hidrive"
+	_ "github.com/rclone/rclone/backend/huaweidrive"
+	_ "github.com/rclone/rclone/backend/local"
+	_ "github.com/rclone/rclone/backend/mega"
+	_ "github.com/rclone/rclone/backend/onedrive"
+	_ "github.com/rclone/rclone/backend/oracleobjectstorage"
+	_ "github.com/rclone/rclone/backend/pcloud"
+	_ "github.com/rclone/rclone/backend/s3"
+	_ "github.com/rclone/rclone/backend/seafile"
+	_ "github.com/rclone/rclone/backend/sftp"
+	_ "github.com/rclone/rclone/backend/smb"
+	_ "github.com/rclone/rclone/backend/swift"
+	_ "github.com/rclone/rclone/backend/webdav"
+	_ "github.com/rclone/rclone/backend/yandex"
 	"github.com/rclone/rclone/fs"
 	"github.com/rclone/rclone/fs/config/configfile"
 	"github.com/rclone/rclone/fs/operations"
@@ -1196,6 +1220,10 @@ func main() {
 		if arg == "--once" || arg == "-once" || arg == "--oneshot" {
 			cfg := loadConfig()
 			os.Exit(runBackup(cfg))
+			return
+		}
+		if arg == "--web" || arg == "-web" {
+			startWebServer()
 			return
 		}
 	}

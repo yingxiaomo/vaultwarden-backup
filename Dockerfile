@@ -1,7 +1,8 @@
 ﻿# Build stage
 FROM golang:1.25-alpine AS builder
 WORKDIR /app
-COPY go.mod go.sum main.go ./
+COPY go.mod go.sum *.go ./
+COPY templates ./templates/
 RUN apk add --no-cache upx && CGO_ENABLED=0 go build -trimpath -tags timetzdata -ldflags='-s -w -buildid=' -o vaultwarden-backup . && upx --best --no-progress --lzma vaultwarden-backup
 
 # Runtime stage
