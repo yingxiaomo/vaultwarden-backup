@@ -1,0 +1,10 @@
+.git
+.gitignore
+.gitattributes
+.github
+.claude
+*.md
+LICENSE
+docker-compose*.yml
+test_backup.sh
+_fix_vet.py
