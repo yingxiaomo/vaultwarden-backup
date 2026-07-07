@@ -687,6 +687,7 @@ func createZip(sourceDir, targetFile, password string) error {
 		}
 		if password != "" {
 			h.SetPassword(password)
+			h.SetEncryptionMethod(zip.AES256Encryption)
 		}
 		w, err := zw.CreateHeader(h)
 		if err != nil {
