@@ -1,8 +1,9 @@
-﻿package main
+package main
 
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,12 +18,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/yeka/zip"
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 	_ "github.com/rclone/rclone/backend/all"
 	"github.com/rclone/rclone/fs"
 	"github.com/rclone/rclone/fs/config/configfile"
 	"github.com/rclone/rclone/fs/operations"
+	"github.com/yeka/zip"
 )
 
 type Config struct {
@@ -103,6 +108,7 @@ func getEnvInt(key string, def int) int {
 	}
 	return def
 }
+
 // ============================================================
 // Rclone SDK 初始化
 // ============================================================
@@ -116,7 +122,6 @@ func ensureRcloneConfig() {
 	})
 }
 
-
 // ============================================================
 // 多语言
 // ============================================================
@@ -128,135 +133,135 @@ var enUS = LangMap{}
 
 func init() {
 	zhCN = LangMap{
-		"startup":            "Vaultwarden 备份容器已启动",
-		"cfg_db_type":        "数据库类型",
-		"cfg_backup_dir":     "备份目录",
-		"cfg_prefix":         "文件前缀",
-		"cfg_keep_local":     "本地保留天数",
-		"cfg_keep_remote":    "远端保留天数",
-		"cfg_min_space":      "磁盘空间阈值",
-		"cfg_rclone":         "远端同步",
-		"cfg_apprise":        "通知方式",
-		"cfg_apprise_url":    "Apprise 直连",
-		"cfg_apprise_api":    "Apprise API",
-		"cfg_proxy":          "代理",
-		"cfg_no_proxy":       "无",
-		"disk_check":         "检查磁盘空间",
-		"disk_check_fail":    "无法获取磁盘空间信息，跳过检查",
-		"disk_warn":          "磁盘空间不足！剩余 %s，低于阈值 %d MB",
-		"disk_ok":            "磁盘空间充足",
-		"db_backup":          "备份数据库（类型: %s）",
-		"db_missing_tool":    "找不到 %s 命令，请检查安装",
-		"db_sqlite_notfound": "找不到 SQLite 数据库文件 %s",
-		"db_missing_mysql":   "MySQL 备份需要设置 DB_USER、DB_PASSWORD 和 DB_NAME",
-		"db_missing_pg":      "PostgreSQL 备份需要设置 DB_USER、DB_PASSWORD 和 DB_NAME",
-		"db_unsupported":     "不支持的数据库类型: %s",
-		"db_ok":              "数据库备份成功",
-		"db_fail":            "数据库备份失败！请检查数据库连接和权限",
-		"staging":            "组装数据文件",
-		"staging_copy":       "复制数据目录内容",
-		"staging_clean":      "清理数据目录中的 SQLite 文件",
-		"zip_start":          "打包中",
-		"zip_unencrypted":    "非加密打包",
-		"zip_encrypted":      "AES-256 加密打包",
-		"zip_fail":           "打包失败",
-		"zip_verify":         "校验压缩包完整性",
-		"zip_verify_ok":      "完整性校验通过",
-		"zip_verify_fail":    "压缩包损坏",
-		"zip_size":           "压缩包大小",
-		"rclone_check":       "检查 Rclone 远端配置",
-		"rclone_check_ok":    "远端配置检查通过",
-		"rclone_notfound":    "找不到 Rclone 远端配置: %s",
-		"rclone_upload":      "上传到 %s",
-		"rclone_retry":       "上传失败，%d 秒后重试（第 %d/%d 次）",
-		"rclone_upload_ok":   "上传成功",
-		"rclone_upload_fail": "上传失败（已重试 %d 次）",
-		"rclone_cleanup":     "清理远端过期备份（保留 %d 天）",
+		"startup":             "Vaultwarden 备份容器已启动",
+		"cfg_db_type":         "数据库类型",
+		"cfg_backup_dir":      "备份目录",
+		"cfg_prefix":          "文件前缀",
+		"cfg_keep_local":      "本地保留天数",
+		"cfg_keep_remote":     "远端保留天数",
+		"cfg_min_space":       "磁盘空间阈值",
+		"cfg_rclone":          "远端同步",
+		"cfg_apprise":         "通知方式",
+		"cfg_apprise_url":     "Apprise 直连",
+		"cfg_apprise_api":     "Apprise API",
+		"cfg_proxy":           "代理",
+		"cfg_no_proxy":        "无",
+		"disk_check":          "检查磁盘空间",
+		"disk_check_fail":     "无法获取磁盘空间信息，跳过检查",
+		"disk_warn":           "磁盘空间不足！剩余 %s，低于阈值 %d MB",
+		"disk_ok":             "磁盘空间充足",
+		"db_backup":           "备份数据库（类型: %s）",
+		"db_missing_tool":     "找不到 %s 命令，请检查安装",
+		"db_sqlite_notfound":  "找不到 SQLite 数据库文件 %s",
+		"db_missing_mysql":    "MySQL 备份需要设置 DB_USER、DB_PASSWORD 和 DB_NAME",
+		"db_missing_pg":       "PostgreSQL 备份需要设置 DB_USER、DB_PASSWORD 和 DB_NAME",
+		"db_unsupported":      "不支持的数据库类型: %s",
+		"db_ok":               "数据库备份成功",
+		"db_fail":             "数据库备份失败！请检查数据库连接和权限",
+		"staging":             "组装数据文件",
+		"staging_copy":        "复制数据目录内容",
+		"staging_clean":       "清理数据目录中的 SQLite 文件",
+		"zip_start":           "打包中",
+		"zip_unencrypted":     "非加密打包",
+		"zip_encrypted":       "AES-256 加密打包",
+		"zip_fail":            "打包失败",
+		"zip_verify":          "校验压缩包完整性",
+		"zip_verify_ok":       "完整性校验通过",
+		"zip_verify_fail":     "压缩包损坏",
+		"zip_size":            "压缩包大小",
+		"rclone_check":        "检查 Rclone 远端配置",
+		"rclone_check_ok":     "远端配置检查通过",
+		"rclone_notfound":     "找不到 Rclone 远端配置: %s",
+		"rclone_upload":       "上传到 %s",
+		"rclone_retry":        "上传失败，%d 秒后重试（第 %d/%d 次）",
+		"rclone_upload_ok":    "上传成功",
+		"rclone_upload_fail":  "上传失败（已重试 %d 次）",
+		"rclone_cleanup":      "清理远端过期备份（保留 %d 天）",
 		"rclone_cleanup_done": "远端清理完成",
-		"rclone_skip":        "未配置 RCLONE_REMOTE，跳过云端上传",
-		"local_cleanup":      "清理本地过期备份（保留 %d 天）",
-		"local_cleanup_done": "本地清理完成",
-		"cleanup_temp":       "清理临时文件",
-		"notify_send":        "发送通知",
-		"notify_apprise_api": "通过 Apprise API 发送",
-		"notify_telegram":    "通过 Telegram 发送",
-		"notify_webhook":     "通过 Webhook 发送",
-		"notify_skip":        "未配置通知方式，跳过",
-		"notify_fail":        "通知发送失败: %v",
-		"success_title":      "Vaultwarden 备份成功",
-		"success_body":       "类型: %s\n大小: %s\n文件: %s.zip",
-		"fail_title":         "Vaultwarden 备份失败",
-		"warn_title":         "Vaultwarden 备份警告",
-		"warn_body":          "磁盘空间不足！剩余 %s，低于阈值 %d MB",
-		"footer":             "备份完成",
-		"err_create_dir":     "创建目录失败",
-		"err_no_write_perm":  "备份目录没有写入权限",
+		"rclone_skip":         "未配置 RCLONE_REMOTE，跳过云端上传",
+		"local_cleanup":       "清理本地过期备份（保留 %d 天）",
+		"local_cleanup_done":  "本地清理完成",
+		"cleanup_temp":        "清理临时文件",
+		"notify_send":         "发送通知",
+		"notify_apprise_api":  "通过 Apprise API 发送",
+		"notify_telegram":     "通过 Telegram 发送",
+		"notify_webhook":      "通过 Webhook 发送",
+		"notify_skip":         "未配置通知方式，跳过",
+		"notify_fail":         "通知发送失败: %v",
+		"success_title":       "Vaultwarden 备份成功",
+		"success_body":        "类型: %s\n大小: %s\n文件: %s.zip",
+		"fail_title":          "Vaultwarden 备份失败",
+		"warn_title":          "Vaultwarden 备份警告",
+		"warn_body":           "磁盘空间不足！剩余 %s，低于阈值 %d MB",
+		"footer":              "备份完成",
+		"err_create_dir":      "创建目录失败",
+		"err_no_write_perm":   "备份目录没有写入权限",
 	}
 
 	enUS = LangMap{
-		"startup":            "Vaultwarden Backup Container Started",
-		"cfg_db_type":        "Database Type",
-		"cfg_backup_dir":     "Backup Directory",
-		"cfg_prefix":         "File Prefix",
-		"cfg_keep_local":     "Local Retention (days)",
-		"cfg_keep_remote":    "Remote Retention (days)",
-		"cfg_min_space":      "Disk Space Threshold",
-		"cfg_rclone":         "Remote Sync",
-		"cfg_apprise":        "Notification",
-		"cfg_apprise_url":    "Apprise Direct",
-		"cfg_apprise_api":    "Apprise API",
-		"cfg_proxy":          "Proxy",
-		"cfg_no_proxy":       "None",
-		"disk_check":         "Checking disk space",
-		"disk_check_fail":    "Cannot determine disk space, skipping check",
-		"disk_warn":          "Insufficient disk space! Available: %s, threshold: %d MB",
-		"disk_ok":            "Disk space OK",
-		"db_backup":          "Backing up database (type: %s)",
-		"db_missing_tool":    "%s command not found, please check installation",
-		"db_sqlite_notfound": "SQLite database file %s not found",
-		"db_missing_mysql":   "MySQL backup requires DB_USER, DB_PASSWORD and DB_NAME",
-		"db_missing_pg":      "PostgreSQL backup requires DB_USER, DB_PASSWORD and DB_NAME",
-		"db_unsupported":     "Unsupported database type: %s",
-		"db_ok":              "Database backup successful",
-		"db_fail":            "Database backup failed! Please check connection and permissions",
-		"staging":            "Assembling data files",
-		"staging_copy":       "Copying data directory contents",
-		"staging_clean":      "Cleaning SQLite files from data directory",
-		"zip_start":          "Packaging",
-		"zip_unencrypted":    "Unencrypted packaging",
-		"zip_encrypted":      "AES-256 encrypted packaging",
-		"zip_fail":           "Packaging failed",
-		"zip_verify":         "Verifying zip integrity",
-		"zip_verify_ok":      "Integrity check passed",
-		"zip_verify_fail":    "Zip file corrupted",
-		"zip_size":           "Backup size",
-		"rclone_check":       "Checking Rclone remote configuration",
-		"rclone_check_ok":    "Remote configuration OK",
-		"rclone_notfound":    "Rclone remote not found: %s",
-		"rclone_upload":      "Uploading to %s",
-		"rclone_retry":       "Upload failed, retrying in %ds (attempt %d/%d)",
-		"rclone_upload_ok":   "Upload successful",
-		"rclone_upload_fail": "Upload failed (retried %d times)",
-		"rclone_cleanup":     "Cleaning up remote expired backups (keeping %d days)",
+		"startup":             "Vaultwarden Backup Container Started",
+		"cfg_db_type":         "Database Type",
+		"cfg_backup_dir":      "Backup Directory",
+		"cfg_prefix":          "File Prefix",
+		"cfg_keep_local":      "Local Retention (days)",
+		"cfg_keep_remote":     "Remote Retention (days)",
+		"cfg_min_space":       "Disk Space Threshold",
+		"cfg_rclone":          "Remote Sync",
+		"cfg_apprise":         "Notification",
+		"cfg_apprise_url":     "Apprise Direct",
+		"cfg_apprise_api":     "Apprise API",
+		"cfg_proxy":           "Proxy",
+		"cfg_no_proxy":        "None",
+		"disk_check":          "Checking disk space",
+		"disk_check_fail":     "Cannot determine disk space, skipping check",
+		"disk_warn":           "Insufficient disk space! Available: %s, threshold: %d MB",
+		"disk_ok":             "Disk space OK",
+		"db_backup":           "Backing up database (type: %s)",
+		"db_missing_tool":     "%s command not found, please check installation",
+		"db_sqlite_notfound":  "SQLite database file %s not found",
+		"db_missing_mysql":    "MySQL backup requires DB_USER, DB_PASSWORD and DB_NAME",
+		"db_missing_pg":       "PostgreSQL backup requires DB_USER, DB_PASSWORD and DB_NAME",
+		"db_unsupported":      "Unsupported database type: %s",
+		"db_ok":               "Database backup successful",
+		"db_fail":             "Database backup failed! Please check connection and permissions",
+		"staging":             "Assembling data files",
+		"staging_copy":        "Copying data directory contents",
+		"staging_clean":       "Cleaning SQLite files from data directory",
+		"zip_start":           "Packaging",
+		"zip_unencrypted":     "Unencrypted packaging",
+		"zip_encrypted":       "AES-256 encrypted packaging",
+		"zip_fail":            "Packaging failed",
+		"zip_verify":          "Verifying zip integrity",
+		"zip_verify_ok":       "Integrity check passed",
+		"zip_verify_fail":     "Zip file corrupted",
+		"zip_size":            "Backup size",
+		"rclone_check":        "Checking Rclone remote configuration",
+		"rclone_check_ok":     "Remote configuration OK",
+		"rclone_notfound":     "Rclone remote not found: %s",
+		"rclone_upload":       "Uploading to %s",
+		"rclone_retry":        "Upload failed, retrying in %ds (attempt %d/%d)",
+		"rclone_upload_ok":    "Upload successful",
+		"rclone_upload_fail":  "Upload failed (retried %d times)",
+		"rclone_cleanup":      "Cleaning up remote expired backups (keeping %d days)",
 		"rclone_cleanup_done": "Remote cleanup completed",
-		"rclone_skip":        "RCLONE_REMOTE not configured, skipping cloud upload",
-		"local_cleanup":      "Cleaning up local expired backups (keeping %d days)",
-		"local_cleanup_done": "Local cleanup completed",
-		"cleanup_temp":       "Cleaning up temporary files",
-		"notify_send":        "Sending notification",
-		"notify_apprise_api": "Via Apprise API",
-		"notify_telegram":    "Via Telegram",
-		"notify_webhook":     "Via Webhook",
-		"notify_skip":        "No notification service configured, skipping",
-		"notify_fail":        "Notification failed: %v",
-		"success_title":      "Vaultwarden Backup Successful",
-		"success_body":       "Type: %s\nSize: %s\nFile: %s.zip",
-		"fail_title":         "Vaultwarden Backup Failed",
-		"warn_title":         "Vaultwarden Backup Warning",
-		"warn_body":          "Insufficient disk space! Available: %s, threshold: %d MB",
-		"footer":             "Backup completed",
-		"err_create_dir":     "Failed to create directory",
-		"err_no_write_perm":  "Backup directory is not writable",
+		"rclone_skip":         "RCLONE_REMOTE not configured, skipping cloud upload",
+		"local_cleanup":       "Cleaning up local expired backups (keeping %d days)",
+		"local_cleanup_done":  "Local cleanup completed",
+		"cleanup_temp":        "Cleaning up temporary files",
+		"notify_send":         "Sending notification",
+		"notify_apprise_api":  "Via Apprise API",
+		"notify_telegram":     "Via Telegram",
+		"notify_webhook":      "Via Webhook",
+		"notify_skip":         "No notification service configured, skipping",
+		"notify_fail":         "Notification failed: %v",
+		"success_title":       "Vaultwarden Backup Successful",
+		"success_body":        "Type: %s\nSize: %s\nFile: %s.zip",
+		"fail_title":          "Vaultwarden Backup Failed",
+		"warn_title":          "Vaultwarden Backup Warning",
+		"warn_body":           "Insufficient disk space! Available: %s, threshold: %d MB",
+		"footer":              "Backup completed",
+		"err_create_dir":      "Failed to create directory",
+		"err_no_write_perm":   "Backup directory is not writable",
 	}
 }
 
@@ -385,48 +390,197 @@ func backupSQLite(cfg Config, output string) error {
 }
 
 func backupMySQL(cfg Config, output string) error {
-	if _, err := exec.LookPath("mysqldump"); err != nil {
-		return fmt.Errorf(T(cfg.Lang, "db_missing_tool"), "mysqldump")
-	}
 	if cfg.DBUser == "" || cfg.DBPassword == "" || cfg.DBName == "" {
 		return fmt.Errorf("%s", T(cfg.Lang, "db_missing_mysql"))
 	}
-	args := []string{
-		"--single-transaction", "--quick", "--opt",
-		"-h", cfg.DBHost,
-		"-P", cfg.DBPort,
-		"-u", cfg.DBUser,
-		cfg.DBName,
-	}
-	env := []string{fmt.Sprintf("MYSQL_PWD=%s", cfg.DBPassword)}
-	out, err := runCmdWithEnv("mysqldump", args, env)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&timeout=30s&interpolateParams=true",
+		cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName)
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return err
+		return fmt.Errorf("连接 MySQL 失败: %w", err)
 	}
-	return os.WriteFile(output, []byte(out), 0644)
+	defer db.Close()
+	if err := db.Ping(); err != nil {
+		return fmt.Errorf("MySQL 连接测试失败: %w", err)
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("-- MySQL dump generated by vaultwarden-backup\n")
+	buf.WriteString(fmt.Sprintf("-- Host: %s  Database: %s\n\n", cfg.DBHost, cfg.DBName))
+	buf.WriteString("SET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS = 0;\nSET SQL_MODE = '';\n\n")
+
+	tables, err := db.Query("SHOW TABLES")
+	if err != nil {
+		return fmt.Errorf("获取表列表失败: %w", err)
+	}
+	defer tables.Close()
+
+	for tables.Next() {
+		var table string
+		if err := tables.Scan(&table); err != nil {
+			return err
+		}
+		qTable := "`" + strings.ReplaceAll(table, "`", "``") + "`"
+
+		// 获取建表语句
+		row := db.QueryRow("SHOW CREATE TABLE " + qTable)
+		var tblName, createSQL string
+		if err := row.Scan(&tblName, &createSQL); err != nil {
+			return fmt.Errorf("获取表 %s 结构失败: %w", table, err)
+		}
+		buf.WriteString(fmt.Sprintf("DROP TABLE IF EXISTS %s;\n%s;\n\n", qTable, createSQL))
+
+		// 导出数据
+		rows, err := db.Query("SELECT * FROM " + qTable)
+		if err != nil {
+			return fmt.Errorf("查询表 %s 数据失败: %w", table, err)
+		}
+		cols, _ := rows.Columns()
+		colCount := len(cols)
+
+		for rows.Next() {
+			values := make([]interface{}, colCount)
+			valuePtrs := make([]interface{}, colCount)
+			for i := range values {
+				valuePtrs[i] = &values[i]
+			}
+			if err := rows.Scan(valuePtrs...); err != nil {
+				return fmt.Errorf("扫描 %s 数据行失败: %w", table, err)
+			}
+
+			buf.WriteString(fmt.Sprintf("INSERT INTO %s VALUES (", qTable))
+			for i, v := range values {
+				if i > 0 {
+					buf.WriteString(", ")
+				}
+				if v == nil {
+					buf.WriteString("NULL")
+				} else {
+					switch val := v.(type) {
+					case []byte:
+						buf.WriteString("'" + escapeSQL(string(val)) + "'")
+					case string:
+						buf.WriteString("'" + escapeSQL(val) + "'")
+					case int64:
+						buf.WriteString(strconv.FormatInt(val, 10))
+					case float64:
+						buf.WriteString(strconv.FormatFloat(val, 'f', -1, 64))
+					case bool:
+						if val {
+							buf.WriteString("1")
+						} else {
+							buf.WriteString("0")
+						}
+					default:
+						buf.WriteString("'" + escapeSQL(fmt.Sprintf("%v", val)) + "'")
+					}
+				}
+			}
+			buf.WriteString(");\n")
+		}
+		rows.Close()
+		buf.WriteString("\n")
+	}
+	buf.WriteString("SET FOREIGN_KEY_CHECKS = 1;\n")
+	return os.WriteFile(output, buf.Bytes(), 0644)
 }
 
 func backupPostgres(cfg Config, output string) error {
-	if _, err := exec.LookPath("pg_dump"); err != nil {
-		return fmt.Errorf(T(cfg.Lang, "db_missing_tool"), "pg_dump")
-	}
 	if cfg.DBUser == "" || cfg.DBPassword == "" || cfg.DBName == "" {
 		return fmt.Errorf("%s", T(cfg.Lang, "db_missing_pg"))
 	}
-	args := []string{
-		"--no-owner", "--no-privileges", "--clean",
-		"-h", cfg.DBHost,
-		"-p", cfg.DBPort,
-		"-U", cfg.DBUser,
-		"-d", cfg.DBName,
-		"-F", "p",
-	}
-	env := []string{fmt.Sprintf("PGPASSWORD=%s", cfg.DBPassword)}
-	out, err := runCmdWithEnv("pg_dump", args, env)
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10",
+		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		return err
+		return fmt.Errorf("连接 PostgreSQL 失败: %w", err)
 	}
-	return os.WriteFile(output, []byte(out), 0644)
+	defer db.Close()
+	if err := db.Ping(); err != nil {
+		return fmt.Errorf("PostgreSQL 连接测试失败: %w", err)
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("-- PostgreSQL dump generated by vaultwarden-backup\n\n")
+	buf.WriteString("SET client_encoding = 'UTF8';\nSET check_function_bodies = false;\n\n")
+
+	// 获取用户表（排除系统 schema）
+	tables, err := db.Query(`
+		SELECT schemaname, tablename FROM pg_catalog.pg_tables
+		WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+		ORDER BY schemaname, tablename`)
+	if err != nil {
+		return fmt.Errorf("获取表列表失败: %w", err)
+	}
+	defer tables.Close()
+
+	for tables.Next() {
+		var schema, table string
+		if err := tables.Scan(&schema, &table); err != nil {
+			return err
+		}
+		qTable := fmt.Sprintf(`"%s"."%s"`, schema, table)
+
+		// 清空表（PostgreSQL 用 TRUNCATE）
+		buf.WriteString(fmt.Sprintf("TRUNCATE TABLE %s CASCADE;\n", qTable))
+
+		// 导出数据
+		rows, err := db.Query("SELECT * FROM " + qTable)
+		if err != nil {
+			return fmt.Errorf("查询表 %s.%s 数据失败: %w", schema, table, err)
+		}
+		cols, _ := rows.Columns()
+		colCount := len(cols)
+
+		for rows.Next() {
+			values := make([]interface{}, colCount)
+			valuePtrs := make([]interface{}, colCount)
+			for i := range values {
+				valuePtrs[i] = &values[i]
+			}
+			if err := rows.Scan(valuePtrs...); err != nil {
+				return fmt.Errorf("扫描 %s.%s 数据行失败: %w", schema, table, err)
+			}
+
+			buf.WriteString(fmt.Sprintf("INSERT INTO %s VALUES (", qTable))
+			for i, v := range values {
+				if i > 0 {
+					buf.WriteString(", ")
+				}
+				if v == nil {
+					buf.WriteString("NULL")
+				} else {
+					switch val := v.(type) {
+					case []byte:
+						buf.WriteString("'" + escapeSQL(string(val)) + "'")
+					case string:
+						buf.WriteString("'" + escapeSQL(val) + "'")
+					case int64:
+						buf.WriteString(strconv.FormatInt(val, 10))
+					case float64:
+						buf.WriteString(strconv.FormatFloat(val, 'f', -1, 64))
+					case bool:
+						if val {
+							buf.WriteString("true")
+						} else {
+							buf.WriteString("false")
+						}
+					default:
+						buf.WriteString("'" + escapeSQL(fmt.Sprintf("%v", val)) + "'")
+					}
+				}
+			}
+			buf.WriteString(");\n")
+		}
+		rows.Close()
+		buf.WriteString("\n")
+	}
+	return os.WriteFile(output, buf.Bytes(), 0644)
+}
+
+// escapeSQL 转义 SQL 字符串中的单引号
+func escapeSQL(s string) string {
+	return strings.NewReplacer(`\`, `\\`, `'`, `''`).Replace(s)
 }
 
 // ============================================================
