@@ -1,7 +1,6 @@
 ﻿package main
 
 import (
-	"archive/zip"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -17,6 +16,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/yeka/zip"
 
 	_ "github.com/rclone/rclone/backend/all"
 	"github.com/rclone/rclone/fs"
@@ -388,7 +389,7 @@ func backupMySQL(cfg Config, output string) error {
 		return fmt.Errorf(T(cfg.Lang, "db_missing_tool"), "mysqldump")
 	}
 	if cfg.DBUser == "" || cfg.DBPassword == "" || cfg.DBName == "" {
-		return fmt.Errorf(T(cfg.Lang, "db_missing_mysql"))
+		return fmt.Errorf("%s", T(cfg.Lang, "db_missing_mysql"))
 	}
 	args := []string{
 		"--single-transaction", "--quick", "--opt",
@@ -410,7 +411,7 @@ func backupPostgres(cfg Config, output string) error {
 		return fmt.Errorf(T(cfg.Lang, "db_missing_tool"), "pg_dump")
 	}
 	if cfg.DBUser == "" || cfg.DBPassword == "" || cfg.DBName == "" {
-		return fmt.Errorf(T(cfg.Lang, "db_missing_pg"))
+		return fmt.Errorf("%s", T(cfg.Lang, "db_missing_pg"))
 	}
 	args := []string{
 		"--no-owner", "--no-privileges", "--clean",
@@ -495,20 +496,6 @@ func removeSQLiteFiles(dir string) {
 // ============================================================
 
 func createZip(sourceDir, targetFile, password string) error {
-	// 有密码时回退到系统 zip 命令（支持 AES-256 加密）
-	if password != "" {
-		args := []string{"-r", "-q", "-P", password, targetFile, ".", "-x", ".*"}
-		cmd := exec.Command("zip", args...)
-		cmd.Dir = sourceDir
-		var stderr bytes.Buffer
-		cmd.Stderr = &stderr
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("zip: %w\n%s", err, stderr.String())
-		}
-		return nil
-	}
-
-	// 无密码时使用 Go 原生 archive/zip，避免外部依赖
 	outFile, err := os.Create(targetFile)
 	if err != nil {
 		return fmt.Errorf("创建压缩包失败: %w", err)
@@ -518,17 +505,13 @@ func createZip(sourceDir, targetFile, password string) error {
 	zw := zip.NewWriter(outFile)
 	defer zw.Close()
 
-	// 遍历源目录并添加文件
-	baseDir := sourceDir
 	err = filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		// 跳过根目录自身
 		if path == sourceDir {
 			return nil
 		}
-		// 跳过隐藏文件（以 . 开头）
 		if strings.HasPrefix(info.Name(), ".") {
 			if info.IsDir() {
 				return filepath.SkipDir
@@ -536,17 +519,22 @@ func createZip(sourceDir, targetFile, password string) error {
 			return nil
 		}
 
-		relPath, _ := filepath.Rel(baseDir, path)
+		relPath, _ := filepath.Rel(sourceDir, path)
 		relPath = filepath.ToSlash(relPath)
 
 		if info.IsDir() {
-			// 写入目录条目（以 / 结尾）
 			_, err := zw.Create(relPath + "/")
 			return err
 		}
 
-		// 写入文件
-		w, err := zw.Create(relPath)
+		h := &zip.FileHeader{
+			Name:   relPath,
+			Method: zip.Deflate,
+		}
+		if password != "" {
+			h.SetPassword(password)
+		}
+		w, err := zw.CreateHeader(h)
 		if err != nil {
 			return err
 		}
@@ -562,14 +550,6 @@ func createZip(sourceDir, targetFile, password string) error {
 }
 
 func verifyZip(zipFile, password string) error {
-	// 有密码时回退到系统 unzip 命令校验
-	if password != "" {
-		args := []string{"-t", "-q", "-P", password, zipFile}
-		_, err := runCmd("unzip", args...)
-		return err
-	}
-
-	// 无密码时使用 Go 原生 archive/zip 校验完整性
 	r, err := zip.OpenReader(zipFile)
 	if err != nil {
 		return fmt.Errorf("打开压缩包失败: %w", err)
@@ -577,12 +557,13 @@ func verifyZip(zipFile, password string) error {
 	defer r.Close()
 
 	for _, f := range r.File {
-		// 读取文件内容以触发 CRC32 校验
+		if password != "" {
+			f.SetPassword(password)
+		}
 		rc, err := f.Open()
 		if err != nil {
 			return fmt.Errorf("压缩包中文件 %s 损坏: %w", f.Name, err)
 		}
-		// 读取所有内容以确保 CRC 校验通过
 		_, err = io.Copy(io.Discard, rc)
 		rc.Close()
 		if err != nil {
