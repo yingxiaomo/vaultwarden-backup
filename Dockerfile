@@ -14,7 +14,7 @@ LABEL org.opencontainers.image.title="Vaultwarden Backup" org.opencontainers.ima
 ENV RCLONE_CONFIG=/config/rclone/rclone.conf
 ENV APP_VERSION=${VERSION}
 
-RUN apk add --no-cache ca-certificates postgresql-client zip unzip sqlite && mkdir -p /app /vw_data /backup /config/rclone
+RUN apk add --no-cache ca-certificates sqlite && mkdir -p /app /vw_data /backup /config/rclone
 
 COPY --from=builder /app/vaultwarden-backup /app/vaultwarden-backup
 
