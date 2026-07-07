@@ -736,6 +736,10 @@ func verifyZip(zipFile, password string) error {
 	defer r.Close()
 
 	for _, f := range r.File {
+		// 跳过目录条目，它们没有数据需要校验
+		if f.FileInfo().IsDir() {
+			continue
+		}
 		if password != "" {
 			f.SetPassword(password)
 		}
