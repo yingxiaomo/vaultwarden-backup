@@ -25,6 +25,7 @@ import (
 	_ "github.com/lib/pq"
 	_ "github.com/rclone/rclone/backend/all"
 	"github.com/rclone/rclone/fs"
+	"github.com/rclone/rclone/fs/config"
 	"github.com/rclone/rclone/fs/config/configfile"
 	"github.com/rclone/rclone/fs/operations"
 	"github.com/yeka/zip"
@@ -118,6 +119,9 @@ var rcloneOnce sync.Once
 // ensureRcloneConfig 确保 rclone 配置已加载，只执行一次
 func ensureRcloneConfig() {
 	rcloneOnce.Do(func() {
+		if cfgPath := os.Getenv("RCLONE_CONFIG"); cfgPath != "" {
+			_ = config.SetConfigPath(cfgPath)
+		}
 		configfile.Install()
 	})
 }
