@@ -1360,7 +1360,8 @@ func startScheduler() {
 // ============================================================
 
 func main() {
-	for _, arg := range os.Args[1:] {
+	restoreFile := ""
+	for i, arg := range os.Args[1:] {
 		if arg == "--once" || arg == "-once" || arg == "--oneshot" {
 			cfg := loadConfig()
 			os.Exit(runBackup(cfg))
@@ -1370,8 +1371,36 @@ func main() {
 			startWebServer()
 			return
 		}
+		if arg == "--restore" || arg == "-restore" {
+			if i+1 < len(os.Args[1:]) && !strings.HasPrefix(os.Args[1:][i+1], "-") {
+				restoreFile = os.Args[1:][i+1]
+			}
+		}
+	}
+
+	if restoreFile != "" || hasFlag(os.Args, "--restore") || hasFlag(os.Args, "-restore") {
+		cfg := loadConfig()
+		ensureRcloneConfig()
+		result := doRestore(cfg, restoreFile)
+		if result.Success {
+			logf(cfg, "✅ %s", result.Message)
+			os.Exit(0)
+		} else {
+			logf(cfg, "❌ %s", result.Message)
+			os.Exit(1)
+		}
+		return
 	}
 
 	startScheduler()
 	select {}
+}
+
+func hasFlag(args []string, flag string) bool {
+	for _, a := range args {
+		if a == flag {
+			return true
+		}
+	}
+	return false
 }
