@@ -4,11 +4,17 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
+	"github.com/yeka/zip"
 )
+
 
 // doRestore 执行恢复操作
 // backupZip 为空时自动查找最新的备份
@@ -37,11 +43,7 @@ func doRestore(cfg Config, backupZip string) restoreResult {
 
 	logf(cfg, "解压备份文件...")
 	ensureRcloneConfig()
-	unzipArgs := []string{"-o", backupZip, "-d", tmpDir}
-	if cfg.ZipPassword != "" {
-		unzipArgs = []string{"-P", cfg.ZipPassword, "-o", backupZip, "-d", tmpDir}
-	}
-	if _, err := runCmd("unzip", unzipArgs...); err != nil {
+	if err := extractZip(backupZip, tmpDir, cfg.ZipPassword); err != nil {
 		return restoreResult{false, "解压备份失败: " + err.Error()}
 	}
 
@@ -205,4 +207,51 @@ func isIgnorableError(err error) bool {
 		return true
 	}
 	return false
+}
+
+// extractZip 用 Go 原生解压 ZIP（兼容 AES-256 加密）
+func extractZip(zipFile, destDir, password string) error {
+	r, err := zip.OpenReader(zipFile)
+	if err != nil {
+		return fmt.Errorf("打开压缩包失败: %w", err)
+	}
+	defer r.Close()
+
+	for _, f := range r.File {
+		fpath := filepath.Join(destDir, f.Name)
+
+		if !strings.HasPrefix(filepath.Clean(fpath), filepath.Clean(destDir)+string(os.PathSeparator)) {
+			return fmt.Errorf("非法文件路径: %s", f.Name)
+		}
+
+		if f.FileInfo().IsDir() {
+			os.MkdirAll(fpath, 0755)
+			continue
+		}
+
+		os.MkdirAll(filepath.Dir(fpath), 0755)
+
+		if password != "" {
+			f.SetPassword(password)
+		}
+
+		rc, err := f.Open()
+		if err != nil {
+			return fmt.Errorf("解压 %s 失败: %w", f.Name, err)
+		}
+
+		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		if err != nil {
+			rc.Close()
+			return fmt.Errorf("创建 %s 失败: %w", fpath, err)
+		}
+
+		_, err = io.Copy(outFile, rc)
+		rc.Close()
+		outFile.Close()
+		if err != nil {
+			return fmt.Errorf("写入 %s 失败: %w", fpath, err)
+		}
+	}
+	return nil
 }
