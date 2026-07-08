@@ -51,6 +51,32 @@ docker pull ghcr.io/yingxiaomo/vaultwarden-backup:latest
 docker-compose up -d
 ```
 
+## 🛠 使用说明
+
+### 一键备份
+
+容器启动后会自动按 Cron 表达式定时备份，也可以通过 `--once` 手动执行：
+
+```bash
+docker exec vaultwarden_backup /app/vaultwarden-backup --once
+```
+
+### 数据恢复
+
+从最新备份恢复：
+
+```bash
+docker exec vaultwarden_backup /app/vaultwarden-backup --restore
+```
+
+从指定备份文件恢复：
+
+```bash
+docker exec vaultwarden_backup /app/vaultwarden-backup --restore /backup/vaultwarden_backup_20260708_030405.zip
+```
+
+> ⚠️ 恢复前会自动备份当前数据到 `.pre_restore_backup`，失败会自动回滚。
+
 ## 🔖 版本号说明
 
 版本号由 CI 自动生成，无需手动管理：
