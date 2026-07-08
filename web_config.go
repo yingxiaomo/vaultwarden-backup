@@ -161,7 +161,7 @@ func saveYamlConfig(cfg *ConfigFile) error {
 	if err := os.WriteFile(getWebConfigPath(), data, 0644); err != nil {
 		return err
 	}
-	syncConfigToEnv(cfg)
+	forceSyncConfig(cfg)
 	return nil
 }
 
@@ -197,15 +197,50 @@ func syncConfigToEnv(cfg *ConfigFile) {
 	setEnv("HTTPS_PROXY", cfg.HTTPSProxy)
 }
 
-// getConfigValue ? YAML ????????????
+func forceSyncConfig(cfg *ConfigFile) {
+	setEnv := func(k, v string) {
+		if v != "" {
+			os.Setenv(k, v)
+		}
+	}
+	setEnv("DB_TYPE", cfg.DBType)
+	setEnv("SQLITE_DB_FILE", cfg.SQLiteDBFile)
+	setEnv("DB_HOST", cfg.DBHost)
+	setEnv("DB_PORT", cfg.DBPort)
+	setEnv("DB_USER", cfg.DBUser)
+	setEnv("DB_PASSWORD", cfg.DBPassword)
+	setEnv("DB_NAME", cfg.DBName)
+	setEnv("BACKUP_PREFIX", cfg.BackupPrefix)
+	setEnv("DATA_DIR", cfg.DataDir)
+	setEnv("BACKUP_DIR", cfg.BackupDir)
+	setEnv("ZIP_PASSWORD", cfg.ZipPassword)
+	setEnv("CRON_SCHEDULE", cfg.CronSchedule)
+	setEnv("RUN_ON_STARTUP", cfg.RunOnStartup)
+	setEnv("STARTUP_DELAY", cfg.StartupDelay)
+	setEnv("LOCAL_BACKUP_KEEP_DAYS", cfg.LocalKeepDays)
+	setEnv("MIN_DISK_SPACE_MB", cfg.MinDiskSpaceMB)
+	setEnv("RCLONE_REMOTE", cfg.RcloneRemote)
+	setEnv("RCLONE_KEEP_DAYS", cfg.RcloneKeepDays)
+	setEnv("APPRISE_URL", cfg.AppriseURL)
+	setEnv("APPRISE_API_URL", cfg.AppriseAPIURL)
+	setEnv("HTTP_PROXY", cfg.HTTPProxy)
+	setEnv("HTTPS_PROXY", cfg.HTTPSProxy)
+	setEnv("TZ", cfg.TZ)
+}
+
+// getConfigValue 获取配置值（环境变量优先 > YAML > 默认值）
 func getConfigValue(cfg *ConfigFile, key string) string {
+	// 环境变量（docker-compose）优先
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
 	if cfg != nil {
 		v := getConfigValueFromFile(cfg, key)
 		if v != "" {
 			return v
 		}
 	}
-	return os.Getenv(key)
+	return ""
 }
 
 func getConfigValueFromFile(cfg *ConfigFile, key string) string {
