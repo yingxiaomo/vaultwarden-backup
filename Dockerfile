@@ -5,7 +5,8 @@ COPY go.mod go.sum ./
 RUN go mod download 2>&1
 
 COPY . ./
-RUN CGO_ENABLED=0 go build -trimpath -tags timetzdata -ldflags='-s -w -buildid=' -o vaultwarden-backup . && apk add --no-cache upx && upx --best --no-progress --lzma vaultwarden-backup
+RUN CGO_ENABLED=0 go build -trimpath -tags timetzdata -ldflags='-s -w -buildid=' -o vaultwarden-backup . && \
+    (apk add --no-cache upx && upx --best --no-progress --lzma vaultwarden-backup) || true
 
 # Runtime stage
 FROM alpine:3.21

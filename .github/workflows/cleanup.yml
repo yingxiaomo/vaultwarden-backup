@@ -1,11 +1,9 @@
-name: 清理旧版容器镜像
+name: Cleanup Old Container Images
 
 on:
   schedule:
-    # 每周日凌晨 4 点执行
     - cron: "0 4 * * 0"
   workflow_dispatch:
-    # 也支持手动触发
 
 jobs:
   cleanup:
@@ -15,7 +13,7 @@ jobs:
       contents: read
 
     steps:
-      - name: 查询并清理旧版本
+      - name: Query and cleanup old versions
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
@@ -25,34 +23,38 @@ jobs:
           KEEP=15
           API_BASE="/repos/${REPO}/packages/container/${PKG_NAME}"
 
-          echo "=== 获取所有版本 ==="
+          echo "=== Fetching all versions ==="
           gh api "${API_BASE}/versions" --paginate \
             --jq ".[] | {id: .id, tags: .metadata.container.tags, created: .created_at}" \
             > /tmp/all_versions.json 2>/dev/null
 
-          # 将 JSON 按创建时间排序（最新的在前）
+          if [ ! -s /tmp/all_versions.json ]; then
+            echo "No versions found or API error"
+            cat /tmp/all_versions.json 2>/dev/null
+            exit 0
+          fi
+
           SORTED=$(jq -s "sort_by(.created) | reverse" /tmp/all_versions.json)
 
-          echo "=== 当前版本列表 ==="
+          echo "=== Current version list ==="
           echo "$SORTED" | jq -r '.[] | "\(.id) \(.created) \(.tags | join(","))"'
 
-          # 筛选出需要删除的版本（跳过带 latest 标签的）
           TO_DELETE=$(echo "$SORTED" | jq -c \
             --argjson keep "$KEEP" \
             '[.[$keep:] | .[] | select(.tags | index("latest") | not)]')
 
           COUNT=$(echo "$TO_DELETE" | jq length)
-          echo "=== 需要删除的版本数: $COUNT ==="
+          echo "=== Versions to delete: $COUNT ==="
 
           if [ "$COUNT" -eq 0 ]; then
-            echo "没有需要清理的旧版本"
+            echo "No old versions to clean up"
             exit 0
           fi
 
           echo "$TO_DELETE" | jq -r '.[] | "\(.id) (\(.tags | join(",")))"' | while read -r line; do
             VID=$(echo "$line" | awk "{print \$1}")
-            echo "删除版本: $line"
-            gh api -X DELETE "${API_BASE}/versions/${VID}" --silent
+            echo "Deleting: $line"
+            gh api -X DELETE "${API_BASE}/versions/${VID}" --silent || echo "Delete failed for $VID (may be latest/protected)"
           done
 
-          echo "=== 清理完成 ==="
+          echo "=== Cleanup completed ==="
