@@ -18,25 +18,36 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          REPO="${{ github.repository }}"
           PKG_NAME="vaultwarden-backup"
           KEEP=15
-          API_BASE="/repos/${REPO}/packages/container/${PKG_NAME}"
 
-          echo "=== Fetching all versions ==="
-          gh api "${API_BASE}/versions" --paginate \
+          echo "=== Fetching all versions via user-level API ==="
+          # Use user-level API (/user/packages/...) instead of repo-level API
+          # GITHUB_TOKEN with packages:write permission can access user-level packages
+          gh api "/user/packages/container/${PKG_NAME}/versions" --paginate \
             --jq ".[] | {id: .id, tags: .metadata.container.tags, created: .created_at}" \
-            > /tmp/all_versions.json 2>/dev/null
+            > /tmp/all_versions.json 2>/tmp/api_errors.log
 
           if [ ! -s /tmp/all_versions.json ]; then
-            echo "No versions found or API error"
-            cat /tmp/all_versions.json 2>/dev/null
+            echo "No versions found via user-level API. Error log:"
+            cat /tmp/api_errors.log
+            echo ""
+            echo "This likely means the GITHUB_TOKEN doesn't have read:packages scope"
+            echo "for user-level packages. The container images are in GHCR but not"
+            echo "exposed via the REST API."
+            echo ""
+            echo "Alternative: Use a Personal Access Token (PAT) with read:packages"
+            echo "and write:packages scopes, stored as a repository secret, and set"
+            echo "as GH_TOKEN instead of GITHUB_TOKEN."
+            echo ""
+            echo "See: https://docs.github.com/en/rest/packages/packages"
             exit 0
           fi
 
+          echo "=== Sorting and displaying versions ==="
           SORTED=$(jq -s "sort_by(.created) | reverse" /tmp/all_versions.json)
 
-          echo "=== Current version list ==="
+          echo "=== Current version list (newest first) ==="
           echo "$SORTED" | jq -r '.[] | "\(.id) \(.created) \(.tags | join(","))"'
 
           TO_DELETE=$(echo "$SORTED" | jq -c \
@@ -51,10 +62,15 @@ jobs:
             exit 0
           fi
 
-          echo "$TO_DELETE" | jq -r '.[] | "\(.id) (\(.tags | join(",")))"' | while read -r line; do
+          echo "=== Deleting old versions ==="
+          echo "$TO_DELETE" | jq -r '.[] | "\(.id) \(.tags | join(","))"' | while read -r line; do
             VID=$(echo "$line" | awk "{print \$1}")
             echo "Deleting: $line"
-            gh api -X DELETE "${API_BASE}/versions/${VID}" --silent || echo "Delete failed for $VID (may be latest/protected)"
+            if ! gh api -X DELETE "/user/packages/container/${PKG_NAME}/versions/${VID}" --silent; then
+              echo "  ✗ Delete failed for $VID"
+            else
+              echo "  ✓ Deleted"
+            fi
           done
 
           echo "=== Cleanup completed ==="
